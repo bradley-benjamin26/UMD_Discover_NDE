@@ -12,9 +12,8 @@
 @font-face { font-family: 'Barlow'; font-weight: 600; font-style: normal; font-display: swap; src: url('^assets/fonts/Barlow-600.woff2') format('woff2'); }
 @font-face { font-family: 'Barlow'; font-weight: 700; font-style: normal; font-display: swap; src: url('^assets/fonts/Barlow-700.woff2') format('woff2'); }
 
-//uncomment the following lines in order to apply your own theme
-
-//.custom-nde-theme{
-//  @include mat.all-component-colors(m3-theme.$light-theme);
-//  @include mat.system-level-colors(m3-theme.$light-theme);
-//}
+.custom-nde-theme {
+  @include mat.all-component-colors(m3-theme.$light-theme);
+  @include mat.system-level-colors(m3-theme.$light-theme);
+  @include mat.system-level-typography(m3-theme.$light-theme);
+}
