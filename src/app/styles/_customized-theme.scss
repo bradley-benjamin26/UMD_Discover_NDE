@@ -1,6 +1,16 @@
 @use 'tokens';
+
 @use '@angular/material' as mat;
 @use 'm3-theme' as m3-theme;
+
+@font-face { font-family: 'Crimson Pro'; font-weight: 400; font-style: normal; font-display: swap; src: url('^assets/fonts/CrimsonPro-400.woff2') format('woff2'); }
+@font-face { font-family: 'Crimson Pro'; font-weight: 600; font-style: normal; font-display: swap; src: url('^assets/fonts/CrimsonPro-600.woff2') format('woff2'); }
+@font-face { font-family: 'Crimson Pro'; font-weight: 700; font-style: normal; font-display: swap; src: url('^assets/fonts/CrimsonPro-700.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 600; font-style: normal; font-display: swap; src: url('^assets/fonts/BarlowCondensed-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 700; font-style: italic; font-display: swap; src: url('^assets/fonts/BarlowCondensed-700italic.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 400; font-style: normal; font-display: swap; src: url('^assets/fonts/Barlow-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 600; font-style: normal; font-display: swap; src: url('^assets/fonts/Barlow-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 700; font-style: normal; font-display: swap; src: url('^assets/fonts/Barlow-700.woff2') format('woff2'); }
 
 //uncomment the following lines in order to apply your own theme
 
