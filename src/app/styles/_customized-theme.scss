@@ -17,3 +17,35 @@
   @include mat.system-level-colors(m3-theme.$light-theme);
   @include mat.system-level-typography(m3-theme.$light-theme);
 }
+
+// .custom-nde-theme is a class on <body>, so it is both "body" and the scope root.
+.custom-nde-theme {
+  font-family: var(--font-body);
+
+  h1, h2, h3 { font-family: var(--font-heading); }
+
+  a {
+    color: var(--maryland-red);
+    text-decoration: underline;
+    &:hover { color: var(--dark-red); }
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .custom-nde-theme, .custom-nde-theme *, .custom-nde-theme *::before, .custom-nde-theme *::after {
+    // !important: must beat component-level transition/animation declarations.
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .custom-nde-theme :focus-visible { outline: 2px solid Highlight; }
+}
