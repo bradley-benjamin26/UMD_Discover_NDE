@@ -128,3 +128,54 @@ copied from the lib.umd.edu Drupal page):
 - **Decision**: Budget: theme stylesheet ≤ 60 KB uncompressed, fonts ≤ 160 KB, header + footer
   HTML ≤ 20 KB, no images except the logo SVG. Measured before/after with the browser's network
   panel in proxy mode.
+
+## Spike findings (T005, proxy mode, 2026-10-28)
+
+Method: `npm run build`, `npm run start:proxy` (target `https://usmai-umcp.primo.exlibrisgroup.com`),
+`http://localhost:4201/nde/...?vid=01USMAI_UMCP:NDE&lang=en`, headless Chrome via puppeteer-core
+(installed outside the repo), `networkidle2` plus a 4–5 s wait. Temporary `header_en.html` /
+`footer_en.html` held `<p style="color:red">MARKER</p><svg aria-hidden="true"><rect width="1" height="1"/></svg>`;
+both were deleted afterwards and the build re-run.
+
+### (a) Static header/footer insertion
+
+| Page | URL | Header | Footer | `style` kept | inline `<svg>` kept |
+|---|---|---|---|---|---|
+| Home | `/nde/home` | yes | yes | yes | yes |
+| Search results | `/nde/search?query=climate…` | yes | yes | yes | yes |
+| Full record | `/nde/fulldisplay?docid=alma9963872540808238…` | yes | yes | yes | yes |
+| Saved records (signed out) | `/nde/account/favorites` | yes | yes | yes | yes |
+| Collection Discovery | `/nde/collectionDiscovery` | yes | yes | yes | yes |
+| My library activity / loans / requests | — | NOT OBSERVED — needs UMD CAS login (menu item opens the login dialog) | | | |
+
+- Header is injected as `nde-header > div > (our HTML)`, at the top of `nde-header` before the skip links.
+  The footer goes in `nde-footer > div.footer-content > (our HTML)`. Both sit inside `nde-app-layout > section.container`.
+- Neither the `style` attribute nor the inline SVG is stripped (output was byte-identical apart from
+  `<rect/>` becoming `<rect></rect>`).
+- `/nde/favorites` is not a route ("page not found"). The route is `/nde/account/favorites`.
+
+### (b) Theme class
+
+`.custom-nde-theme` is present on `<body>` on every page tested
+(`body.mat-typography.mat-app-background.nde-overrides.custom-nde-theme`). `<html>` has no class.
+
+### (c) NDE elements (results for `climate`, facet `rtype,include,books` applied via URL)
+
+| Element | Observed markup (trimmed) | Selector to use | Material? |
+|---|---|---|---|
+| Primary button | `button[mat-flat-button][color=primary].mdc-button--unelevated.mat-mdc-unelevated-button.mat-primary` ("Apply filters", `#applyFiltersButton`) | `.mat-mdc-unelevated-button.mat-primary` | yes |
+| Secondary button | `button[mat-stroked-button].mdc-button--outlined.mat-mdc-outlined-button` (quick filters, `.quick-filter-btn`) | `.mat-mdc-outlined-button` | yes |
+| Text buttons (most actions) | `button[mat-button].mdc-button.mat-mdc-button` (`.mat-primary` or `.mat-unthemed`), e.g. Advanced search, Available Online `.quicklink-button` | `.mat-mdc-button` | yes |
+| Applied-facet summary | `nde-selected-filters > button.selected-filters-container[aria-haspopup][aria-expanded][data-qa=Selected_rtype]`, label "Resource Type (1)", aria-label "Showing results filtered by Resource Type". This is a custom button, not a chip. | `nde-selected-filters button.selected-filters-container` | no |
+| Applied-facet chip (inside the dropdown, shown only when expanded) | `.dropdown-box > .selected-value-chip-container > mat-chip-listbox > mat-chip-option.mat-mdc-chip.mat-mdc-chip-option.selected-value-chip.selected-chip.mat-primary` | `nde-selected-filters .mat-mdc-chip-option.selected-chip` | yes |
+| Chip remove control | `button[matchipremove].mat-mdc-chip-remove.mat-mdc-chip-trailing-icon.remove-chip[role=button][tabindex=-1]`, accessible name from `aria-label="Use space or delete to remove the active filter"` (no text, and it does not name the value). The chip's primary action has `aria-label="Active filter  Books"`. | `nde-selected-filters .mat-mdc-chip-remove` | yes |
+| Resource-type label | `nde-record-type > span.record-type.text-uppercase` ("Book") | `nde-record-type .record-type` | no |
+| Indication tags | `nde-record-indications .record-indication-cont > div > mat-icon + span.record-indication.text-uppercase` ("Open Access", "Peer Reviewed") plus `span.sr-only` | `nde-record-indications .record-indication` | no (contains `mat-icon`) |
+| Availability (physical) | `nde-physical-availability-line > div.availability-status > mat-icon.available-record-indicator-color + button[mat-button].available-at-button` | `nde-physical-availability-line .availability-status` | partly (mat-icon and mat-button) |
+| Availability (online) | `nde-online-availability button[mat-button][color=primary].quicklink-button` ("Available Online") | `nde-online-availability .quicklink-button` | yes (`mat-mdc-button`) |
+| Result card | `nde-search-result-item-container > div.search-result-item.card` | `nde-search-result-item-container .search-result-item` | no |
+| Result title link | `nde-record-title[data-qa=brief_result_title] > a.record-title.anchor-tag-style.mat-body-large[data-qa=go_to_full_display]` (plus a visually hidden `h3`) | `nde-record-title a.record-title` | no (`mat-body-large` is only a typography class) |
+
+Notes: there are no `mat-chip` elements outside the applied-filter dropdown. The back-to-top control is
+`.mat-mdc-mini-fab.mat-primary`. The full record page offered no filled/raised buttons while signed out.
+A `mat-snack-bar` ("Sign in to view available request and scan options") appears on results pages.
