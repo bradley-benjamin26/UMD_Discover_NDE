@@ -24,3 +24,29 @@ Test sanity check: against a hand-made stylesheet with all tokens, 8 `@font-face
 compiled Material M3 output (`all-component-colors` + `system-level-colors`, compressed), all
 11 tests pass; adding `color:#fff` and an SVG data URI with `xmlns=http://…` fails the two
 guard tests.
+
+## T015 — header/footer test fails before implementation (RED)
+
+`npm run test:assets` with `tests/header-footer.test.js` added and no `header_en.html` /
+`footer_en.html` yet. Result: 33 tests, 18 pass, 15 fail. The 18 existing tests (theme tokens,
+asset manifest, proxy) pass; all 15 new header/footer tests fail, each with
+`ENOENT: no such file or directory` for `src/assets/header-footer/header_en.html` or
+`footer_en.html` (the size test fails on `stat`), so they fail because the files are missing,
+not because of a test bug.
+
+Failing: every href is absolute https:// or tel:; no script, inline event handler or button;
+no external stylesheet or font loading, no style attribute that hides content; every img has
+alt, width and height; no link opens a new tab; header and footer together are at most 20 KB;
+header has exactly one `<header>`; header global bar links "University of Maryland" to umd.edu;
+header logo links to lib.umd.edu with the Libraries home name; header nav "University
+Libraries" has the six top-level links in order; footer has exactly one `<footer>`; footer
+link groups are `<h2>` headings each followed by a `<ul>`; footer phone link is
+tel:+13014050800; footer social links have accessible names and aria-hidden icons; footer
+bottom bar has Give Now, Privacy Policy, Web Accessibility and the copyright.
+
+Test sanity check: `HF_DIR` pointed at hand-made compliant files outside the repo passes all 15.
+Single injected violations each fail the targeted test: `http://` link, site-relative `/about`,
+`target="_blank"`, `onclick=`, swapped nav order, img without `alt`, wrong logo name, `<p>`
+between `<h2>` and `<ul>`, wrong `tel:`, svg without `aria-hidden`, `<link>` to a font
+stylesheet, wrong social name, `style="display:none"`. The footer's inline SVG
+`xmlns="http://www.w3.org/2000/svg"` does not trip any rule.
