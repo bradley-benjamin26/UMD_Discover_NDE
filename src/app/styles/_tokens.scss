@@ -1,0 +1,41 @@
+:root {
+  --maryland-red: #E21833;
+  --dark-red: #A90007;
+  --maryland-yellow: #FFD200;
+  --white: #FFFFFF;
+  --black: #000000;
+  --lightest-gray: #FAFAFA;
+  --lighter-gray: #F1F1F1;
+  --light-gray: #E6E6E6;
+  --medium-gray: #757575;
+  --dark-gray: #454545;
+  --darker-gray: #242424;
+  --green: #037623;
+
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4rem;
+  --space-3xl: 7.5rem;
+
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.15rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.625rem;
+
+  --radius-sm: 0.125rem;
+  --radius-md: 1rem;
+  --radius-pill: 999rem;
+
+  --focus-ring: 3px solid var(--darker-gray);
+  --focus-ring-on-dark: 3px solid var(--maryland-yellow);
+  --focus-offset: 2px;
+
+  --font-heading: "Crimson Pro", serif;
+  --font-display: "Barlow Condensed", sans-serif;
+  --font-body: Barlow, Helvetica, Arial, sans-serif;
+}
