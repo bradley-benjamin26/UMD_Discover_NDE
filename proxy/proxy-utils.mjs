@@ -101,8 +101,8 @@ export function isIzAssetManifestRequest(requestPath) {
 }
 
 export function normalizeManifestPath(filePath, rootDirectory = process.cwd()) {
-  const absoluteRootDirectory = path.resolve(rootDirectory || process.cwd());
-  const absoluteFilePath = path.resolve(filePath);
+  const absoluteRootDirectory = path.resolve((rootDirectory || process.cwd()).replace(/\\/g, '/'));
+  const absoluteFilePath = path.resolve(filePath.replace(/\\/g, '/'));
 
   const relativePath = path.relative(absoluteRootDirectory, absoluteFilePath);
   if (!relativePath || relativePath === '.' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {

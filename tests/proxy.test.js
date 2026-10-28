@@ -64,7 +64,7 @@ test('resolveLocalAssetFilePath prefers src/assets and returns null when missing
   const { resolveLocalAssetFilePath } = await import('../proxy/proxy-utils.mjs');
 
   const originalCwd = process.cwd();
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'asset-test-'));
+  const tempRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'asset-test-')));
   const buildRoot = path.join(tempRoot, 'dist', 'custom-module');
   try {
     fs.mkdirSync(path.join(tempRoot, 'src', 'assets', 'homepage'), { recursive: true });
