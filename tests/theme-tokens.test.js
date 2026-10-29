@@ -443,3 +443,13 @@ test('US2 T024: menu item links use an allowed pair on the menu surface', () => 
   const bg = declaredToken(selectorsFor(css, '.mat-mdc-menu-panel'), ['--mat-menu-container-color', 'background-color']);
   assert.ok(text && bg && isAllowedPair(text, bg), `menu link text/background ${text} / ${bg} is not an allowed pair`);
 });
+
+test('T025: home quick-link tiles (link colour on --sys-inverse-on-surface) use an allowed pair', () => {
+  const css = readCss();
+  // NDE: .main-landing-page .menu-container .menu li a { background-color: var(--sys-inverse-on-surface) }; the text is our
+  // .custom-nde-theme a colour. The generated M3 value (#ffedeb) gives --maryland-red 4.2:1, so the role must be a token.
+  const root = selectorsFor(css, '.custom-nde-theme').filter((f) => f.sel === '.custom-nde-theme');
+  const bg = declaredToken(root, ['--sys-inverse-on-surface']);
+  const text = declaredToken(selectorsFor(css, '.custom-nde-theme a').filter((f) => f.sel === '.custom-nde-theme a'), ['color']);
+  assert.ok(text && bg && isAllowedPair(text, bg), `link text on --sys-inverse-on-surface: ${text} / ${bg} is not an allowed pair`);
+});

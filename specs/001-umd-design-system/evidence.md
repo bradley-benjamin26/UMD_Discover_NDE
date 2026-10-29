@@ -373,3 +373,38 @@ checks only; it does not replace manual keyboard/screen-reader review. My Librar
 - Header/footer: none on any page.
 - results: `color-contrast` on `.mdc-snackbar__label` (background undetermined, overlaps other elements); present only in A, likely theme-coloured Discover snackbar, needs manual contrast check.
 - All other incompletes (aria-prohibited-attr on quick links, results/record/collections color-contrast with image/gradient backgrounds, aria-valid-attr-value on `#mat-expansion-panel-header-5`) appear in both A and B, so are Discover-owned; the record-page and home incompletes are not listed individually here.
+
+### T025 fix — home quick-link tile contrast (2026-10-28)
+
+Root cause (live DOM, CDP matched rules on `#FAQ_link`): the tile text colour is our `.custom-nde-theme a { color: var(--maryland-red) }`
+(#e21833; it beats NDE's `a:not(.link-reset) { color: var(--sys-primary) }`); the background is NDE's
+`.main-landing-page .menu-container .menu li a { background-color: var(--sys-inverse-on-surface) }`, and our
+`mat.system-level-colors(m3-theme.$light-theme)` sets that role to #ffedeb on `.custom-nde-theme` (NDE stock: #f4eefb).
+NDE uses the same role as a light background for the tile icon circle, landing announcements and about text, the
+selected chip / favourite-label / tag chips and the selected scope-menu item, so the fix is at the role: in
+`_customized-theme.scss`, `.custom-nde-theme { --sys-inverse-on-surface: var(--white); }` (after the generated value; the
+generated palette in `m3-theme.scss` is unchanged). Tiles become `--maryland-red` on `--white` = 4.76 (allowed pair). The role's
+other M3 use (tooltip/snackbar text on `--sys-inverse-surface` #402b2a) becomes white on #402b2a, a higher ratio than before.
+
+Test: `tests/theme-tokens.test.js` "T025: home quick-link tiles (link colour on --sys-inverse-on-surface) use an allowed pair".
+RED: `--maryland-red / undefined is not an allowed pair` (29 tests, 28 pass, 1 fail). GREEN: `npm run test:assets` 52 tests,
+52 pass, 0 fail (log `.superpowers/sdd/tasks/t025fix.log`). custom.css 51,241 bytes (≤ 60 KB).
+
+Re-scan (same A/B method, 5 s settle on every page; log `.superpowers/sdd/tasks/t025fix-scan.log`):
+
+| Page | Violations A | Violations B | OURS |
+|---|---|---|---|
+| home | 0 | 0 | **0** |
+| results | 1 rule (1 node) | 1 rule (1 node) | 0 |
+| full record | 1 rule (5 nodes) | 1 rule (5 nodes) | 0 |
+| My Library (signed out) | 0 | 0 | 0 |
+| collections | 0 | 0 | 0 |
+
+**SC-003 now met for the scanned pages: 0 violations introduced.**
+
+Snackbar: the results page raises NDE's "Sign in to view available request and scan options" snackbar on load. Measured
+manually (computed style + `elementsFromPoint`): `.mdc-snackbar__label` text rgb(0,0,0) on `.mdc-snackbar__surface` rgb(255,255,255),
+14px/400 = 21:1, identical with our theme, with the pre-fix #ffedeb value, and in the baseline (NDE sets
+`--mdc-snackbar-supporting-text-color: #000000` / container `#ffffff` there). The axe "incomplete" is only an overlap
+(the snackbar sits over page content at the viewport bottom), not a contrast failure; no change needed. It is still listed as
+incomplete only in A after the fix.

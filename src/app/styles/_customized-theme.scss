@@ -21,6 +21,9 @@
 // .custom-nde-theme is a class on <body>, so it is both "body" and the scope root.
 .custom-nde-theme {
   font-family: var(--font-body);
+  // NDE paints landing-page tiles, announcements and chips with this role behind our --maryland-red links;
+  // the generated M3 tint (#ffedeb) gives 4.2:1 there, so use the allowed --white background instead.
+  --sys-inverse-on-surface: var(--white);
 
   h1, h2, h3 { font-family: var(--font-heading); }
 
