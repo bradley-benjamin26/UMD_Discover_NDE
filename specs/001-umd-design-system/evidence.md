@@ -430,3 +430,30 @@ incomplete only in A after the fix.
   hamburger disclosure containing both navigation groups and their submenu links.
 - Expanded the combined static header/footer limit to 32 KB to cover the responsive navigation
   variants and restored menu links; the resulting header and footer remain within that cap.
+
+## T026 — page load theme on vs off
+
+Method (2026-10-29): `npm run build` (exit 0, log `.superpowers/sdd/tasks/T026-build.log`), proxy on :4202. Headless Chrome via
+puppeteer-core, results page `/nde/search?query=climate&tab=Everything&search_scope=MyInst_and_CI&vid=01USMAI_UMCP:NDE&lang=en`,
+viewport 1280x1600. Fresh incognito context per run (cold cache), ON/OFF interleaved, n=8 each. **OFF** = request interception returns
+empty 200 for `custom.css`, `header_en.html`, `footer_en.html` and aborts our `*.woff2`/`*.otf` fonts; **ON** = normal. Metrics:
+FCP; LCP (PerformanceObserver, buffered); time to first visible `.search-result-item` (20 ms poll, `performance.now()`); bytes
+(CDP `encodedDataLength`) of package files. No network/CPU throttling (local proxy to live Primo). Script/raw: scratchpad `t026/m.mjs`, `out.json`.
+
+| Metric (ms) | ON median | ON IQR | OFF median | OFF IQR | Increase of medians |
+|---|---|---|---|---|---|
+| FCP | 3094 | 1218 | 3026 | 548 | +2.2% |
+| LCP | 3770 | 2811 | 3602 | 713 | +4.7% |
+| First result visible | 4043 | 2953 | 3938 | 726 | +2.7% |
+
+Package bytes transferred (median per run; ON / OFF): custom.css 62,076 / 39; fonts (Interstate 400-500 + 600-700 otf, CrimsonPro 400/600,
+BarlowCondensed 600) 104,434 / 0 (aborted); header/footer html + header/footer logo svgs 112,949 / 160; library-logo.png etc. 6,434 / 6,434.
+Total ON 285,893 B vs OFF 6,633 B (+279 KB, against ~3.8 MB of other `/custom/` bundle bytes in both arms).
+
+Verdict: **SC-005 PASS on medians** (LCP +4.7%, time-to-first-result +2.7%, both <= 10%). However the ON IQR (about 2.8-3.0 s, driven by
+three slow runs of ~6-8 s in the ON arm; the OFF arm had slow runs too) is far larger than the 100-170 ms difference, so the difference is
+**within noise**: no measurable regression, but this run cannot resolve a 10% effect precisely.
+
+Caveats: n=8, live Primo backend latency varies run to run (outliers in both arms); cold cache only, no throttling, so real-network cost of the
++279 KB package payload is not modelled (fonts/header/footer are not render-blocking for the result list, consistent with the small median delta);
+OFF arm also removes header/footer DOM, which slightly favours OFF; byte counts include package files only.
