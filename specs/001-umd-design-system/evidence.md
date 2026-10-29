@@ -524,3 +524,20 @@ manually checked here, so contrast of those header nodes is NOT VERIFIED by axe;
   disclosure/menu convention of Escape-to-close (not an axe rule, not a WCAG 2.2 A/AA failure by itself: closing is possible by keyboard).
 - Not tested: screen reader announcements, real (headed) browsers other than headless Chrome, Safari/Firefox disclosure behaviour, hover
   behaviour, widths between 321 and 1439 (e.g. just above/below the 1240px switch).
+
+## Final review fixes
+
+RED: all five new/changed node tests failed against the pre-fix build for the expected reason (log `.superpowers/sdd/tasks/final-fix-red.log`, 56/61). GREEN: `npm run test:assets` 61/61; full `npm test` karma TOTAL 3 SUCCESS + node 61/61. custom.css 57,581 bytes (budget 61,440).
+Live checks on the :4202 proxy, search results page (`query=climate`), headless Chrome.
+
+| Fix | Test | RED → GREEN | Live |
+|---|---|---|---|
+| I1 Material type-role fallbacks (`m3-theme.scss` plain/brand family = full stacks) | `Final I1: Material type roles end in a generic font family` | `--sys-body-medium-font: Interstate` → `Interstate, Helvetica, Arial, sans-serif`; `--sys-headline-small-font: "Crimson Pro", serif`; shorthand `--sys-body-medium: 400 .875rem / 1.25rem Interstate, Helvetica, Arial, sans-serif` | body `--sys-body-medium-font` = `Interstate, Helvetica, Arial, sans-serif` |
+| I3 exclusive desktop dropdowns (`name="umd-header-menu"` on all 10 desktop `<details>`; mobile menu unchanged, no nested siblings) | `Final I3: desktop dropdowns share one name so at most one is open` | "desktop dropdown has no name" → pass | clicking 3 summaries in turn leaves 1 open ("Open System Status menu" after the 3rd click toggled closed) |
+| I4 forced-colors hamburger (`@media (forced-colors: active)`: icon + ::before/::after `forced-color-adjust: none; background: CanvasText`) | `Final I4: forced-colors draws the hamburger icon bars in CanvasText` | no forced-colors rule → pass | CDP `forced-colors: active` at 320px: bars/::before/::after `rgb(255,255,255)` on Canvas `rgb(0,0,0)`; bars visible in screenshot |
+| I5 scoped link rule (`.custom-nde-theme a:where(:not(.mat-mdc-button-base):not(.mdc-button):not(.mat-mdc-menu-item):not(.mat-mdc-tab-link))`, specificity stays 0,1,1) | `Final I5: the global link rule skips Material anchor controls` (T025 lookup updated to the new selector; its allowed-pair assertion unchanged) | "does not exclude .mat-mdc-button-base" → pass | Material anchor buttons (New Search, Database Finder, ...): `text-decoration: none`, Material colour `rgb(191,0,37)`; record-title link: underline, `rgb(226,24,51)` (--maryland-red) |
+| Global bar font `Crimson, serif` → `var(--font-heading)` (contract updated) | `global banner matches the centered UMD wordmark and responsive heights` (assertion changed to `var(--font-heading)`) | regex mismatch → pass | `.umd-global-bar a` font-family `"Crimson Pro", serif` |
+
+Item 6 — manual contrast of the axe "incomplete" utility dropdown links: each of the 5 utility dropdowns opened live, 21 links measured against their actual painted background. All `--darker-gray` #242424 on `--white`: 15.52:1; one link under the pointer (hover, `--lighter-gray`): 13.74:1. PASS (≥ 4.5:1), no change needed.
+
+Not fixed: closing a dropdown on focus-out or Escape needs script, which the header-footer contract forbids.

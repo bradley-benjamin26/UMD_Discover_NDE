@@ -475,6 +475,37 @@ test('T025: home quick-link tiles (link colour on --sys-inverse-on-surface) use 
   // .custom-nde-theme a colour. The generated M3 value (#ffedeb) gives --maryland-red 4.2:1, so the role must be a token.
   const root = selectorsFor(css, '.custom-nde-theme').filter((f) => f.sel === '.custom-nde-theme');
   const bg = declaredToken(root, ['--sys-inverse-on-surface']);
-  const text = declaredToken(selectorsFor(css, '.custom-nde-theme a').filter((f) => f.sel === '.custom-nde-theme a'), ['color']);
+  const text = declaredToken(selectorsFor(css, '.custom-nde-theme a:where(').filter((f) => !f.sel.includes(':hover')), ['color']);
   assert.ok(text && bg && isAllowedPair(text, bg), `link text on --sys-inverse-on-surface: ${text} / ${bg} is not an allowed pair`);
+});
+
+// ---- Final review fixes ----
+
+test('Final I1: Material type roles end in a generic font family', () => {
+  const css = readCss();
+  for (const [name, generic] of [['--sys-body-medium-font', 'sans-serif'], ['--sys-headline-small-font', 'serif'], ['--sys-body-medium', 'sans-serif']]) {
+    const decls = tokenDeclarations(css, name);
+    assert.ok(decls.length, `${name} not declared`);
+    for (const d of decls) assert.equal(families(d.value).pop(), generic, `${name}: ${d.value}`);
+  }
+});
+
+test('Final I4: forced-colors draws the hamburger icon bars in CanvasText', () => {
+  const css = readCss();
+  const bg = rulesFor(css, '.umd-mobile-menu__icon').filter((r) => r.media.includes('forced-colors'))
+    .flatMap((r) => r.selectors.map((sel) => [sel, r.decls.filter((d) => /^background/.test(d.prop)).map((d) => d.value).join()]));
+  // The minifier writes ::before as :before.
+  for (const part of [/\.umd-mobile-menu__icon$/, /\.umd-mobile-menu__icon::?before$/, /\.umd-mobile-menu__icon::?after$/]) {
+    assert.ok(bg.some(([sel, v]) => part.test(sel) && v.includes('CanvasText')), `${part} has no CanvasText background in forced colors: ${JSON.stringify(bg)}`);
+  }
+});
+
+const MATERIAL_ANCHORS = ['.mat-mdc-button-base', '.mdc-button', '.mat-mdc-menu-item', '.mat-mdc-tab-link'];
+test('Final I5: the global link rule skips Material anchor controls', () => {
+  const css = readCss();
+  const linkRules = selectorsFor(css, '.custom-nde-theme a').filter((f) => /^\.custom-nde-theme a(?![-\w.])/.test(f.sel) && f.decls.some((d) => d.prop === 'text-decoration' && d.value === 'underline'));
+  assert.ok(linkRules.length, 'global underlined link rule not found');
+  for (const { sel } of linkRules) {
+    for (const cls of MATERIAL_ANCHORS) assert.ok(sel.includes(`:not(${cls})`), `${sel} does not exclude ${cls}`);
+  }
 });

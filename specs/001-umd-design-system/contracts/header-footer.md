@@ -15,7 +15,7 @@ NDE inserts these on every page. Checked by `tests/header-footer.test.js`.
 
 - One `<header>` landmark, placed after the spec 007 skip link.
 - Global bar: link "University of Maryland" → `https://umd.edu/`.
-  Match the library website's centered, white, uppercase wordmark on Maryland red: Crimson/serif,
+  Match the library website's centered, white, uppercase wordmark on Maryland red: the heading font (`var(--font-heading)`, Crimson Pro/serif),
   14px regular text, 1.3 line-height, 1px letter spacing, and no underline. The bar is 56px high below
   1100px viewport width and 44px from 1100px upward. Keep a visible high-contrast keyboard focus ring.
 - Logo link → `https://www.lib.umd.edu/`, accessible name "University of Maryland Libraries home".

@@ -215,7 +215,7 @@ test('global banner matches the centered UMD wordmark and responsive heights', (
   assert.match(banner, /align-items:\s*center;/);
   assert.match(banner, /height:\s*56px;/);
   assert.match(banner, /@media\s*\(min-width:\s*1100px\)\s*\{\s*\.umd-global-bar\s*\{\s*height:\s*44px;/);
-  assert.match(banner, /font-family:\s*Crimson,\s*serif;/);
+  assert.match(banner, /font-family:\s*var\(--font-heading\);/);
   assert.match(banner, /font-size:\s*14px;/);
   assert.match(banner, /font-weight:\s*400;/);
   assert.match(banner, /line-height:\s*1\.3;/);
@@ -292,6 +292,14 @@ test('primary and utility navigation provide native, accessible dropdowns', () =
     const expected = Object.entries(expectedMenus).map(([name, submenu]) => [`Open ${name} menu`, submenu]);
     assert.deepEqual(actualMenus, expected);
   }
+});
+
+test('Final I3: desktop dropdowns share one name so at most one is open', () => {
+  const desktop = /<div class="umd-desktop-navigation">([\s\S]*?)<details\b[^>]*class="umd-mobile-menu"/i.exec(read('header_en.html'))[1];
+  const names = [...desktop.matchAll(/<details\b([^>]*)>/gi)].map(([, attrs]) => attr(attrs, 'name'));
+  assert.equal(names.length, 10, 'expected 10 desktop dropdowns');
+  assert.ok(names[0], 'desktop dropdown has no name');
+  assert.deepEqual(new Set(names), new Set([names[0]]), `desktop dropdown names differ: ${names}`);
 });
 
 test('footer has exactly one <footer> landmark', () => {
