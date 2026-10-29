@@ -408,3 +408,25 @@ manually (computed style + `elementsFromPoint`): `.mdc-snackbar__label` text rgb
 `--mdc-snackbar-supporting-text-color: #000000` / container `#ffffff` there). The axe "incomplete" is only an overlap
 (the snackbar sits over page content at the viewport bottom), not a contrast failure; no change needed. It is still listed as
 incomplete only in A after the fix.
+
+## Font alignment update (2026-10-28)
+
+- Replaced the Barlow body substitute with the licensed Interstate regular and semibold/bold
+  OpenType files, served from the local customization package. Removed the now-unused Barlow body
+  assets; the bundled font payload is 138,272 bytes.
+- Runtime check in proxy mode: body and primary navigation compute to
+  `Interstate, Helvetica, Arial, sans-serif`; the Interstate regular face reports `loaded`, and
+  both local OpenType assets return HTTP 200 with `font/otf`.
+- `npm run test:assets`: 53 tests passed. The manual check confirms the local font loads; visual
+  side-by-side typography review remains pending.
+
+## Header layout and dropdown update (2026-10-28)
+
+- Used the prior implementation's desktop geometry: 1680px content width, 4rem-high logo on the
+  left, right-aligned utility row above the primary row, and separated utility links.
+- Restored the prior header's primary and utility submenu destinations without copying its disabled
+  script or external theme CSS. Submenus use native `<details>` / `<summary>` disclosure controls.
+- At 1240px and below, the two desktop navigation rows are replaced with a single collapsed
+  hamburger disclosure containing both navigation groups and their submenu links.
+- Expanded the combined static header/footer limit to 32 KB to cover the responsive navigation
+  variants and restored menu links; the resulting header and footer remain within that cap.

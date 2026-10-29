@@ -15,7 +15,7 @@ token names (`reference/tokens.css`) so values can be compared one to one.
 | Gray | `--lightest-gray`, `--lighter-gray`, `--light-gray`, `--medium-gray`, `--dark-gray`, `--darker-gray` | `#FAFAFA`, `#F1F1F1`, `#E6E6E6`, `#757575`, `#454545`, `#242424` |
 | Status | `--green` | `#037623` |
 | Spacing | `--space-xs` … `--space-3xl` | 0.5, 1, 1.5, 2, 3, 4, 7.5 rem |
-| Type family | `--font-heading`, `--font-display`, `--font-body` | Crimson Pro; Barlow Condensed; Barlow, Helvetica, Arial, sans-serif |
+| Type family | `--font-heading`, `--font-display`, `--font-body` | Crimson Pro; Barlow Condensed; Interstate, Helvetica, Arial, sans-serif |
 | Type scale | `--text-sm`, `--text-base`, `--text-lg`, `--text-xl`, `--text-2xl`, `--text-3xl` | 0.875, 1, 1.15, 1.5, 2, 2.625 rem |
 | Shape | `--radius-sm`, `--radius-md`, `--radius-pill` | 0.125, 1, 999 rem |
 | Focus | `--focus-ring`, `--focus-ring-on-dark`, `--focus-offset` | 3px solid `--darker-gray`; 3px solid `--maryland-yellow`; 2px |
@@ -63,4 +63,5 @@ borders use `CanvasText` and focus rings use `Highlight`.
 ## Reference capture
 
 `reference/tokens.css` (copied 2026-10-28) is the source for the token values. The saved
-lib.umd.edu `fonts.css` stays outside the repository (licensed Interstate).
+The package includes only the licensed Interstate font weights it uses; the site's full
+`fonts.css` and unrelated font families stay outside the repository.

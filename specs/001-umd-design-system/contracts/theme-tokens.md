@@ -14,4 +14,4 @@ Checked by `tests/theme-tokens.test.js` against the built stylesheet in `dist/`:
 - All tokens above are defined exactly once.
 - No colour literal (`#…`, `rgb(…)`, `hsl(…)`) appears outside the token block.
 - Every allowed pair meets its stated minimum contrast.
-- `@font-face` sources are local (`assets/fonts/…`) WOFF2 files; no `http` URLs anywhere.
+- `@font-face` sources are local (`assets/fonts/…`) font files; no `http` URLs anywhere.

@@ -8,9 +8,8 @@
 @font-face { font-family: 'Crimson Pro'; font-weight: 700; font-style: normal; font-display: swap; src: url('^assets/fonts/CrimsonPro-700.woff2') format('woff2'); }
 @font-face { font-family: 'Barlow Condensed'; font-weight: 600; font-style: normal; font-display: swap; src: url('^assets/fonts/BarlowCondensed-600.woff2') format('woff2'); }
 @font-face { font-family: 'Barlow Condensed'; font-weight: 700; font-style: italic; font-display: swap; src: url('^assets/fonts/BarlowCondensed-700italic.woff2') format('woff2'); }
-@font-face { font-family: 'Barlow'; font-weight: 400; font-style: normal; font-display: swap; src: url('^assets/fonts/Barlow-400.woff2') format('woff2'); }
-@font-face { font-family: 'Barlow'; font-weight: 600; font-style: normal; font-display: swap; src: url('^assets/fonts/Barlow-600.woff2') format('woff2'); }
-@font-face { font-family: 'Barlow'; font-weight: 700; font-style: normal; font-display: swap; src: url('^assets/fonts/Barlow-700.woff2') format('woff2'); }
+@font-face { font-family: 'Interstate'; font-weight: 400 500; font-style: normal; font-display: swap; src: url('^assets/fonts/Interstate-400-500.otf') format('opentype'); }
+@font-face { font-family: 'Interstate'; font-weight: 600 700; font-style: normal; font-display: swap; src: url('^assets/fonts/Interstate-600-700.otf') format('opentype'); }
 
 .custom-nde-theme {
   @include mat.all-component-colors(m3-theme.$light-theme);
@@ -63,28 +62,137 @@
   }
 
   .umd-global-bar {
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box; height: 56px;
     background: var(--maryland-red);
     color: var(--white);
-    padding: var(--space-xs) max(var(--space-sm), calc((100% - 1440px) / 2));
-    a { color: var(--white); &:hover { color: var(--white); } }
+    a {
+      display: inline-block; margin-top: 1px; padding: 10px 0;
+      font-family: Crimson, serif; font-size: 14px; font-weight: 400; line-height: 1.3;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--white); text-decoration: none;
+      &:hover { color: var(--white); text-decoration: none; }
+      &:focus-visible { outline: var(--focus-ring-on-dark); outline-offset: var(--focus-offset); }
+    }
+  }
+  @media (min-width: 1100px) {
+    .umd-global-bar { height: 44px; }
   }
 
   .umd-header__main {
-    display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm);
-    max-width: 1440px; margin-inline: auto; padding: var(--space-sm);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--space-sm) var(--space-lg); max-width: 1680px; margin-inline: auto;
+    padding: var(--space-md) var(--space-sm);
   }
   .umd-header__logo {
-    display: block; max-width: 100%;
-    img { display: block; max-width: 100%; height: auto; }
+    display: block; flex: 0 0 auto; max-width: 100%;
+    img { display: block; width: auto; max-width: 100%; height: 4rem; object-fit: contain; }
   }
-  .umd-nav ul {
-    display: flex; flex-wrap: wrap; gap: var(--space-sm);
+  .umd-header__navigation {
+    display: flex; flex: 1 1 36rem; flex-direction: column; align-items: flex-end;
+    gap: var(--space-sm); min-width: 0;
+  }
+  .umd-desktop-navigation {
+    display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-sm);
+  }
+  .umd-mobile-menu { display: none; }
+  .umd-utility-nav > ul, .umd-nav > ul {
+    display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-xs) var(--space-md);
     list-style: none; margin: 0; padding: 0;
   }
-  .umd-nav a {
-    color: var(--darker-gray); font-family: var(--font-display);
-    font-size: var(--text-lg); text-decoration: none;
+  .umd-nav > ul { gap: var(--space-sm) var(--space-md); }
+  .umd-utility-nav__item, .umd-nav__item {
+    display: flex; align-items: center; gap: var(--space-xs); position: relative;
+    list-style: none;
+  }
+  .umd-utility-nav__item + .umd-utility-nav__item {
+    border-inline-start: 1px solid currentColor; padding-inline-start: var(--space-sm);
+  }
+  .umd-utility-nav__link, .umd-nav__link {
+    color: var(--darker-gray);
+    text-decoration: none;
     &:hover { color: var(--darker-gray); text-decoration: underline; }
+  }
+  .umd-utility-nav__link { font-family: var(--font-body); font-size: var(--text-sm); }
+  .umd-nav__link { font-family: var(--font-body); font-size: var(--text-base); font-weight: 700; }
+  .umd-menu {
+    position: static;
+    summary {
+      display: grid; width: 1.5rem; height: 1.5rem; place-items: center;
+      cursor: pointer; list-style: none;
+      &::-webkit-details-marker { display: none; }
+    }
+  }
+  .umd-menu__chevron {
+    display: block; width: 0.5rem; height: 0.5rem;
+    border-right: 2px solid var(--maryland-red); border-bottom: 2px solid var(--maryland-red);
+    transform: translateY(-0.125rem) rotate(45deg);
+  }
+  .umd-menu[open] .umd-menu__chevron { transform: translateY(0.125rem) rotate(225deg); }
+  .umd-menu__panel {
+    position: absolute; z-index: 20; top: calc(100% + var(--space-xs)); right: 0;
+    width: max-content; min-width: 13rem; max-width: min(24rem, calc(100vw - 2rem));
+    padding: var(--space-sm); border: 1px solid var(--light-gray);
+    border-top: 2px solid var(--maryland-red); background: var(--white);
+    ul { display: grid; gap: var(--space-xs); margin: 0; padding: 0; list-style: none; }
+  }
+  .umd-menu__link {
+    display: block; padding: var(--space-xs); color: var(--darker-gray);
+    font-family: var(--font-body); text-decoration: none; white-space: normal;
+    &:hover { color: var(--darker-gray); background: var(--lighter-gray); text-decoration: underline; }
+  }
+  .umd-menu summary:focus-visible, .umd-menu__link:focus-visible {
+    outline: var(--focus-ring); outline-offset: var(--focus-offset);
+  }
+  .umd-mobile-menu summary {
+    display: grid; width: 3rem; height: 3rem; place-items: center;
+    cursor: pointer; list-style: none;
+    &::-webkit-details-marker { display: none; }
+    &:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+  }
+  .umd-mobile-menu__icon,
+  .umd-mobile-menu__icon::before,
+  .umd-mobile-menu__icon::after {
+    display: block; width: 1.5rem; height: 2px; background: var(--darker-gray);
+  }
+  .umd-mobile-menu__icon { position: relative; }
+  .umd-mobile-menu__icon::before, .umd-mobile-menu__icon::after {
+    position: absolute; left: 0; content: "";
+  }
+  .umd-mobile-menu__icon::before { top: -0.5rem; }
+  .umd-mobile-menu__icon::after { top: 0.5rem; }
+  .umd-mobile-menu[open] .umd-mobile-menu__icon { background: transparent; }
+  .umd-mobile-menu[open] .umd-mobile-menu__icon::before { top: 0; transform: rotate(45deg); }
+  .umd-mobile-menu[open] .umd-mobile-menu__icon::after { top: 0; transform: rotate(-45deg); }
+  .umd-mobile-menu__panel {
+    position: absolute; z-index: 20; top: 100%; right: 0;
+    box-sizing: border-box; width: min(28rem, calc(100vw - 2rem)); max-height: min(75vh, 40rem);
+    overflow: auto; padding: var(--space-md); border: 1px solid var(--light-gray);
+    border-top: 2px solid var(--maryland-red); background: var(--white);
+  }
+  .umd-mobile-menu__panel nav + nav { margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--light-gray); }
+  .umd-mobile-menu__panel ul { display: grid; gap: var(--space-sm); margin: 0; padding: 0; list-style: none; }
+  .umd-mobile-menu__panel li > a {
+    display: block; padding: var(--space-xs); color: var(--darker-gray);
+    font-family: var(--font-body); text-decoration: none;
+    &:hover { color: var(--darker-gray); background: var(--lighter-gray); text-decoration: underline; }
+  }
+  .umd-mobile-menu__primary > ul > li > a { font-weight: 700; }
+  .umd-mobile-menu__primary ul ul {
+    gap: var(--space-xs); margin-top: var(--space-xs); padding-inline-start: var(--space-sm);
+  }
+  .umd-mobile-menu__primary ul ul a { font-size: var(--text-sm); font-weight: 400; }
+  .umd-mobile-menu__utility ul ul {
+    gap: var(--space-xs); margin-top: var(--space-xs); padding-inline-start: var(--space-sm);
+  }
+  .umd-mobile-menu__utility ul ul a { font-size: var(--text-sm); }
+  .umd-mobile-menu__panel a:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+  @media (max-width: 77.5rem) {
+    .umd-header__main { flex-wrap: nowrap; align-items: center; position: relative; }
+    .umd-header__logo img { height: 3rem; }
+    .umd-header__navigation { flex: 0 0 auto; }
+    .umd-desktop-navigation { display: none; }
+    .umd-mobile-menu { display: block; position: static; }
   }
 
   .umd-footer {

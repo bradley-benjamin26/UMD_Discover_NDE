@@ -10,8 +10,8 @@ Make every Discover page look like lib.umd.edu: the red UMD global bar, Librarie
 navigation, the Libraries footer, UMD colours and fonts, and Discover's own buttons, chips, tags,
 and cards restyled to match. Approach: one compiled theme stylesheet holding the brand tokens and
 an Angular Material 3 theme generated from Maryland red (so NDE's Material controls restyle
-through their own theme rather than fragile selector overrides), self-hosted free fonts
-(Crimson Pro, Barlow Condensed, Barlow), and a new static header and footer with absolute links
+through their own theme rather than fragile selector overrides), self-hosted licensed fonts
+(Interstate, Crimson Pro, Barlow Condensed), and a new static header and footer with absolute links
 and no scripts. Ships together with spec 007 (skip link before the header).
 
 ## Technical Context
@@ -31,9 +31,9 @@ build. No new dependencies.
 **Project Type**: Front-end customization package for a hosted web app
 
 **Performance Goals**: Page load increase ≤ 10% (SC-005); theme CSS ≤ 60 KB, fonts ≤ 160 KB,
-header + footer ≤ 20 KB
+header + footer ≤ 32 KB
 
-**Constraints**: WCAG 2.2 AA; no third-party requests; free-licence fonts only; light theme only
+**Constraints**: WCAG 2.2 AA; no third-party requests; redistribution-approved fonts only; light theme only
 
 **Scale/Scope**: All Discover page types in one view (`01USMAI_UMCP:NDE`)
 
@@ -78,7 +78,7 @@ src/
 │   ├── _customized-theme.scss   # tokens, @font-face, Material theme include, gap overrides
 │   └── m3-theme.scss            # regenerated from #E21833 (light)
 └── assets/
-    ├── fonts/                   # Crimson Pro, Barlow Condensed, Barlow WOFF2 + OFL.txt
+    ├── fonts/                   # licensed Interstate + OFL Crimson Pro and Barlow Condensed
     └── header-footer/
         ├── header_en.html       # new
         ├── footer_en.html       # new

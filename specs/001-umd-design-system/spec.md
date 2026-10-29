@@ -18,8 +18,8 @@ to control styling etc."
   chips, buttons, tags, and cards to match UMD. No staff style kit and no patron-facing controls.
 - Q: Which pages are in scope? → A: All Discover pages, including My Library/account and
   collections.
-- Q: Which typefaces? → A: Free (openly licensed) fonts only, packaged with Discover. lib.umd.edu
-  uses Interstate (licensed, so excluded), Crimson Pro, and Barlow Condensed (both free).
+- Q: Which typefaces? → A: Use the same typefaces as lib.umd.edu, packaged with Discover.
+  Interstate redistribution in the customization package is covered by the UMD Libraries license.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -95,7 +95,12 @@ states.
 ### Functional Requirements
 
 - **FR-001**: Discover MUST display a UMD global bar and UMD Libraries header matching the
-  reference capture on every page.
+  reference capture on every page. The header MUST place the logo on the left and provide two
+  right-justified navigation rows on its right: utility navigation above primary navigation. Both
+  rows MUST remain usable and right-justified when they wrap at narrow widths. Navigation items
+  with subpages MUST expose working, keyboard-operable dropdowns with links to those subpages.
+  At viewports 1240 CSS px and narrower, the two rows MUST be replaced by one collapsed, keyboard-
+  operable hamburger disclosure containing both navigation groups and their submenu links.
 - **FR-002**: Discover MUST display a footer matching the lib.umd.edu footer content and style on
   every page.
 - **FR-003**: Discover MUST use one shared set of brand values (colors, typefaces, type scale,
@@ -109,11 +114,12 @@ states.
 - **FR-006**: All styling MUST meet WCAG 2.2 AA: text contrast 4.5:1 (3:1 large), UI component and
   focus indicator contrast 3:1, targets at least 24×24 CSS px, reflow at 320 CSS px, usable at
   200% zoom, and visible in forced-colors mode.
-- **FR-007**: Fonts MUST be openly licensed and served from the Discover customization package
-  itself. No requests to third-party font or style services are allowed (Constitution II).
-- **FR-008**: Headings MUST use Crimson Pro and display/label text MUST use Barlow Condensed, as on
-  lib.umd.edu. Body text MUST use a free substitute for Interstate chosen to match its proportions,
-  with a Helvetica/Arial/sans-serif fallback.
+- **FR-007**: Fonts MUST be served from the Discover customization package itself and MUST be
+  covered by a license that permits redistribution (the UMD Libraries license for Interstate and
+  OFL for the other families). No requests to third-party font or style services are allowed
+  (Constitution II).
+- **FR-008**: Body text MUST use Interstate, headings MUST use Crimson Pro, and display/label text
+  MUST use Barlow Condensed, matching lib.umd.edu, with appropriate generic fallbacks.
 - **FR-009**: The feature MUST NOT add tracking, analytics, or any new transmission of patron data.
 - **FR-010**: Styling MUST NOT hide, reorder, or remove Discover content or functionality.
 - **FR-011**: The styling MUST cover all Discover pages: home, search results, full record,
@@ -151,8 +157,8 @@ states.
   `reference/tokens.css`. Key values: Maryland red `#E21833`, Maryland yellow `#FFD200`, dark red
   `#A90007`, a gray scale from `#FAFAFA` to `#242424`, status green `#037623`, and spacing steps of
   8/16/24/32/48/64/120 px.
-- The saved `fonts.css` embeds licensed Interstate font data and MUST NOT be copied into this
-  repository.
+- Interstate font files may be bundled in this repository under the UMD Libraries license; do not
+  include the site's full `fonts.css` or unrelated font families.
 - lib.umd.edu defines a dark theme. Discover gets the light theme only; dark theme is out of scope.
 - Where the reference conflicts with WCAG 2.2 AA, accessibility wins (Constitution I).
 - English is the only interface language in scope.

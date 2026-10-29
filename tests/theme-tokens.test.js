@@ -54,7 +54,7 @@ const FOCUS = {
 const FONTS = {
   '--font-heading': { first: 'Crimson Pro' },
   '--font-display': { first: 'Barlow Condensed' },
-  '--font-body': { exact: ['Barlow', 'Helvetica', 'Arial', 'sans-serif'] },
+  '--font-body': { exact: ['Interstate', 'Helvetica', 'Arial', 'sans-serif'] },
 };
 
 const ALL_TOKENS = [...Object.keys(COLOURS), ...Object.keys(LENGTHS), ...Object.keys(FOCUS), ...Object.keys(FONTS)];
@@ -207,11 +207,21 @@ test('every allowed text/background pair meets its contrast minimum', () => {
   assert.deepEqual(failures, []);
 });
 
-test('@font-face rules load all local WOFF2 fonts with font-display: swap', () => {
+test('@font-face rules load only approved local fonts with font-display: swap', () => {
   const css = stripComments(readCss());
   const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
-  const expected = fs.readdirSync(FONTS_DIR).filter((f) => f.endsWith('.woff2')).sort();
-  assert.equal(expected.length, 8, 'expected the 8 WOFF2 files from T003 in src/assets/fonts');
+  const expected = [
+    'BarlowCondensed-600.woff2',
+    'BarlowCondensed-700italic.woff2',
+    'CrimsonPro-400.woff2',
+    'CrimsonPro-600.woff2',
+    'CrimsonPro-700.woff2',
+    'Interstate-400-500.otf',
+    'Interstate-600-700.otf',
+  ];
+  for (const file of expected) assert.ok(fs.existsSync(path.join(FONTS_DIR, file)), `missing font asset: ${file}`);
+  const fontBytes = expected.reduce((sum, file) => sum + fs.statSync(path.join(FONTS_DIR, file)).size, 0);
+  assert.ok(fontBytes <= 160 * 1024, `font assets total ${fontBytes} bytes, exceeding 160 KB`);
   const referenced = [];
   for (const face of faces) {
     assert.match(face, /font-display\s*:\s*swap/, `@font-face without font-display: swap: ${face}`);
@@ -220,12 +230,27 @@ test('@font-face rules load all local WOFF2 fonts with font-display: swap', () =
     const urls = [...src[1].matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)].map((m) => m[1]);
     assert.ok(urls.length, `@font-face src has no url(): ${src[1]}`);
     for (const url of urls) {
-      const local = /^(?:\.{0,2}\/)*assets\/fonts\/([^/]+\.woff2)$/.exec(url);
-      assert.ok(local, `@font-face src is not a local assets/fonts/*.woff2: ${url}`);
+      const local = /^(?:\.{0,2}\/)*assets\/fonts\/([^/]+\.(?:woff2|otf))$/.exec(url);
+      assert.ok(local, `@font-face src is not an approved local font asset: ${url}`);
       referenced.push(local[1]);
     }
   }
   assert.deepEqual([...new Set(referenced)].sort(), expected);
+});
+
+test('Interstate regular and semibold faces use the licensed local assets', () => {
+  const faces = [...stripComments(readCss()).matchAll(/@font-face\s*\{([^}]*)\}/g)]
+    .map((m) => m[1])
+    .filter((face) => /font-family\s*:\s*["']?Interstate["']?/i.test(face));
+  const interstate = faces.map((face) => ({
+    weight: /font-weight\s*:\s*([^;]+)/.exec(face)?.[1].trim(),
+    url: /url\(\s*["']?([^"')]+)["']?\s*\)/.exec(face)?.[1],
+    format: /format\(\s*["']?([^"')]+)["']?\s*\)/.exec(face)?.[1],
+  }));
+  assert.deepEqual(interstate, [
+    { weight: '400 500', url: 'assets/fonts/Interstate-400-500.otf', format: 'opentype' },
+    { weight: '600 700', url: 'assets/fonts/Interstate-600-700.otf', format: 'opentype' },
+  ]);
 });
 
 test('stylesheet contains no http:// or https:// reference', () => {

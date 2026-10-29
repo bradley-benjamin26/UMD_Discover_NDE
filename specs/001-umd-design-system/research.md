@@ -58,20 +58,20 @@ Measured WCAG contrast for the lib.umd.edu tokens (`reference/tokens.css`):
 
 ## R4. Fonts (FR-007, FR-008)
 
-- **Decision**: Self-host WOFF2, Latin subset, `font-display: swap`, in `src/assets/fonts/` with
-  each font's OFL licence file:
+- **Decision**: Self-host the font files, Latin subset, `font-display: swap`, in
+  `src/assets/fonts/`:
   - Headings: **Crimson Pro** 400/600/700 (as lib.umd.edu).
   - Display/labels: **Barlow Condensed** 600/700 italic (as lib.umd.edu).
-  - Body (Interstate substitute): **Barlow** 400/600/700. Interstate is a highway-signage grotesque;
-    Barlow is drawn from the same highway-sign tradition and is Barlow Condensed's own family, so
-    body and labels match. Fallback: Helvetica, Arial, sans-serif.
-- **Rationale**: Free licences, zero third-party requests, `swap` gives no invisible text
-  (edge case: font fails to load).
-- **Alternatives**: Overpass (Highway Gothic based): close, but a separate family from Barlow
-  Condensed. Source Sans Pro: what the lib.umd.edu error page uses, but further from Interstate.
-  Google Fonts CDN: third-party request, violates Constitution II.
-- **Budget**: about 8 files × ~20 KB ≈ 160 KB, loaded once and cached. Only weights actually used are
-  shipped.
+  - Body: **Interstate** 400/600–700, covered for package redistribution by the UMD Libraries
+    license; fallback: Helvetica, Arial, sans-serif.
+- **Rationale**: Use the same font families as lib.umd.edu, while keeping all font requests local
+  to the Discover customization package. `font-display: swap` prevents invisible text if a font
+  fails to load.
+- **Alternatives**: The prior Barlow body substitute was license-safe but visibly different from
+  lib.umd.edu. Loading the font from an external service would add a third-party request and is
+  unnecessary because the approved font files are packaged locally.
+- **Budget**: Keep the font payload within the existing page-load budget; include only font weights
+  used by Discover and preserve the existing WOFF2 assets for the openly licensed families.
 
 ## R5. Header (FR-001)
 
@@ -86,11 +86,17 @@ copied from the lib.umd.edu Drupal page):
 
 - **Decision**: A new, hand-written static header in `src/assets/header-footer/header_en.html`:
   the red UMD global bar ("University of Maryland" → umd.edu), the Libraries logo
-  (→ www.lib.umd.edu), and the lib.umd.edu top-level navigation as plain absolute links that wrap
-  on narrow screens. No submenus and no buttons, so nothing needs a script.
-- **Rationale**: Static HTML is the mechanism the prior project proved NDE loads. Plain links are
-  accessible with no script, work at 320 px, and match the look of the header at rest (submenus
-  are hidden until opened on lib.umd.edu anyway). Smallest thing that meets FR-001.
+  (→ www.lib.umd.edu), and two right-justified navigation rows to the right of the logo. The first
+  row has utility links (Locations & Hours, System Status, Get Help, Info For, Accounts, Search);
+  the second has the primary links (Find, Borrow, Request; Visit and Study; Research and Learning;
+  Collections; About). Destination links are paired with native `<details>` / `<summary>` dropdowns
+  for the previous implementation's submenu links. Rows wrap and remain right-justified on narrow
+  screens.
+- **Rationale**: Static HTML is the mechanism the prior project proved NDE loads. The previous
+  header's submenu buttons depended on a commented-out script, so this version uses built-in
+  disclosure elements instead; their open/closed state, pointer activation, and keyboard operation
+  work without JavaScript. The navigation labels and destinations are listed in the
+  [header/footer contract](./contracts/header-footer.md).
 - **Alternatives**: Full mega-menu as an Angular component at a header hook: matches more closely,
   but adds interactive code, focus management, and tests for a menu that duplicates lib.umd.edu's
   navigation. Rejected for v1; can be a later spec if needed.
@@ -126,7 +132,9 @@ copied from the lib.umd.edu Drupal page):
 ## R8. Performance (SC-005)
 
 - **Decision**: Budget: theme stylesheet ≤ 60 KB uncompressed, fonts ≤ 160 KB, header + footer
-  HTML ≤ 20 KB, no images except the logo SVG. Measured before/after with the browser's network
+  HTML ≤ 32 KB, no images except the logo SVG. The larger header budget covers both desktop and
+  mobile navigation and their dropdown links while keeping the files small. Measured before/after with the browser's
+  network
   panel in proxy mode.
 
 ## Spike findings (T005, proxy mode, 2026-10-28)
