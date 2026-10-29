@@ -170,3 +170,137 @@ sets `transition-duration` on every element, and the test accepts that universal
 Sanity check: `THEME_CSS=<file> node --test --test-name-pattern='^US2'` against a hand-written minified
 stylesheet that meets the data model gave pass 10 / fail 0. A copy with `#e6e6e6` as the card border and a
 20px chip remove `min-height` gave fail 3 (24px, literal, card border), which is the expected result.
+
+## T024 — US2 manual checks
+
+Method (2026-10-28): `npm run build` (exit 0, log `.superpowers/sdd/tasks/T024-build.log`),
+`npm run start:proxy -- --port 4202 --public-host http://localhost:4202 --live-reload false`
+(stopped afterwards), headless Chrome via puppeteer-core, 1440×1000, `networkidle2` + 5 s. Signed out.
+Five states: default; hover = `page.hover`; focus = real Tab key presses until the control is
+`document.activeElement` (`:focus-visible` true), measured after 1.5 s (NDE's button rings have a
+0.28 s transition); active = mouse down held, no release on target; disabled = search for
+disabled instances. Contrast = WCAG 2.x formula on computed colours; where Material paints a state
+layer over the fill, the rendered fill was read from the screenshot pixels instead.
+
+**Facets (clicked, not URL).** Search `climate` → "All Filters" → clicked checkbox "Peer-reviewed
+Journals" (Limit to; applies immediately) → clicked "Articles" (Resource Type) → clicked
+"Apply filters". URL then had `mfacet=tlevel,include,peer_reviewed&mfacet=rtype,include,articles`;
+two active filters: dropdown `Resource Type (1)` (chip "Articles") and the pressed quick filter
+"Peer-reviewed Journals". (Language facet could not be clicked: its panel is collapsed.)
+
+**Keyboard removal (exact sequence, no mouse after Apply):**
+1. Focus starts in the open filters panel, which traps Tab (200 Tabs cycled inside it). Tab ×44 →
+   "Close filters menu", **Enter** → panel closes, focus on "All Filters".
+2. **Tab ×3** → `button.selected-filters-container` "Resource Type (1)" (`:focus-visible`, outline
+   `3px solid rgb(36, 36, 36)`).
+3. **Enter** → `aria-expanded="true"`, 1 chip shown, focus stays on the dropdown button.
+4. **Tab** → chip primary action (`role=option`, aria-label "Active filter  Articles").
+   (**ArrowRight** from here moves focus to the remove button; Tab leaves the dropdown.)
+5. **Delete** → URL becomes `…&mfacet=tlevel,include,peer_reviewed…`; "Articles" removed,
+   "Peer-reviewed Journals" still applied (checked, quick filter pressed). PASS.
+
+**Accessible names:** dropdown button "Showing results filtered by Resource Type" (count not in
+name); chip primary action "Active filter  Articles" (double space); remove control
+`aria-label="Use space or delete to remove the active filter"`, `tabindex=-1`, does not name the
+value. Expected "Remove filter: Articles" → **Discover-owned** (not masked).
+
+| Control | Default | Hover | Focus (Tab) | Active (mouse down) | Disabled |
+|---|---|---|---|---|---|
+| Primary ("Apply filters") | PASS | PASS | **FAIL (ours)** | PASS | NOT OBSERVED |
+| Secondary (quick filter, outlined) | PASS | PASS | **FAIL (ours)** | PASS | NOT OBSERVED |
+| Secondary, selected/pressed | **FAIL (ours)** | — | — | — | — |
+| Chip ("Articles") | **FAIL (ours)** | PASS | PASS¹ | PASS | NOT OBSERVED |
+| Chip remove | PASS | PASS | PASS² | PASS | NOT OBSERVED |
+| Result card | PASS³ | PASS | n/a (not focusable) | PASS | n/a |
+| Result title link | PASS | PASS | PASS | PASS | n/a |
+
+Evidence (computed values; contrast in brackets):
+
+- Primary: default bg `rgb(226, 24, 51)` text white [4.76]; hover/active bg `rgb(169, 0, 7)` [7.81]
+  (rendered hover `rgb(176, 20, 27)` [7.09], active `rgb(188, 58, 64)` [5.50]). **Focus FAIL:**
+  outline `none`; NDE's `.mdc-button.mat-mdc-unelevated-button.apply-filters-btn.cdk-keyboard-focused[_ngcontent-…]`
+  (higher specificity) sets `outline:none; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #000` and beats our
+  `.custom-nde-theme .mat-mdc-unelevated-button.mat-primary:focus-visible`. Result: a 1 px black ring
+  outside a 2 px white gap, not `3px solid rgb(36, 36, 36)`. Also the focus state layer renders the
+  fill as `rgb(229, 52, 75)`: white text **[4.26] < 4.5**. Reached after 62 Tabs inside the panel.
+- Secondary ("Online (Full-Text)"): default text/border `rgb(226, 24, 51)` on white [4.76];
+  hover/active text `rgb(169, 0, 7)` on `rgb(250, 250, 250)` [7.48] (active border `rgb(46, 46, 39)`
+  from NDE). **Focus FAIL:** outline `2px solid rgb(41, 23, 22)` [17.1] from NDE's
+  `.quick-filters-container … .cdk-keyboard-focused { outline: 2px solid var(--sys-on-background) }`,
+  which comes later than our rule at equal specificity; rendered focus fill `rgb(247, 224, 229)` gives
+  red text **[3.80] < 4.5**. Reached after 47 Tabs.
+- Secondary selected ("Peer-reviewed Journals", pressed): our `color: var(--maryland-red)` on NDE's
+  selected bg `rgb(255, 237, 235)` **[4.21] < 4.5**; border `rgb(191, 0, 37)`.
+- ¹Chip: **default FAIL**: border renders `1px solid rgb(191, 0, 37)` (NDE
+  `.mat-mdc-standard-chip.mdc-evolution-chip--selectable:not(…) { border: 1px solid var(--sys-primary) }`)
+  with our `--mdc-chip-outline-color` `#757575` drawn inside it (double outline in screenshot), not a
+  single `--medium-gray` border. Text `rgb(41, 23, 22)` on white [17.1]; the label renders red in the
+  screenshot (not measured). Hover bg `rgb(241, 241, 241)` [15.14]; active same. Focus lands on the
+  inner primary action: `3px solid rgb(36, 36, 36)` [15.52 vs white], plus NDE's
+  `2px solid rgb(41, 23, 22)` on the chip host (two rings). Our host `:focus-visible` rule never
+  matches because focus is on the inner button.
+- ²Chip remove: 40×24 px (≥ 24), icon `rgb(65, 0, 6)` [17.11 / 15.15 on hover]. Reached by ArrowRight
+  from the chip, not by Tab (`tabindex=-1`). Ring `3px solid rgb(36, 36, 36)`, `:focus-visible`
+  true. It was read after a programmatic `.focus()` that followed the ArrowRight, so the ring was not
+  measured during a pure keyboard move.
+- ³Card: white bg, text `rgb(41, 23, 22)` [17.1]; border `1px solid rgb(230, 230, 230)` **[1.25]**,
+  hover/active `rgb(117, 117, 117)` [4.61]. The card is not a control, so 1.4.11 probably does not
+  apply. Listed for the reviewer.
+- Title link: `rgb(226, 24, 51)` [4.76], hover/active `rgb(169, 0, 7)` [7.81], focus `3px solid
+  rgb(36, 36, 36)` [15.52] after 54 Tabs; mouse-down did not navigate.
+- Disabled: no disabled primary, secondary, chip or remove control on search, record or favorites.
+  Disabled controls seen are NDE icon buttons (favorites/actions on results, pagination arrow,
+  record prev/next, "Search inside"), alpha 0.38 text (exempt).
+- Dropdown button "Resource Type (1)": focus `3px solid rgb(36, 36, 36)` (our global
+  `:focus-visible`). Dropdown panel white, shadow only.
+
+**Full record** (`/nde/fulldisplay?…` first result): no filled, outlined, raised buttons or chips
+visible while signed out. Text buttons `rgb(191, 0, 37)` on white [6.48]; "Available Online"
+outlined text button `rgb(191, 0, 37)` [6.48]; type tag "Journal" and tag "Peer Reviewed"
+`rgb(36, 36, 36)` on `rgb(241, 241, 241)` [13.74]. PASS.
+
+**My Library** (signed out): `/nde/account/favorites` shows "Saved records (0)" `rgb(191, 0, 37)` on
+`rgb(255, 218, 216)` [5.02], other buttons ≥ 6.48. User menu opened with Enter on "Open user
+actions menu button": items Sign in, Search history, Settings, My library activity, Saved records.
+**FAIL (ours):** the four link items render `rgb(226, 24, 51)` (our `.custom-nde-theme a { color:
+var(--maryland-red) }`) on NDE's menu surface `rgb(255, 233, 231)` **[4.09] < 4.5**. Menu item
+keyboard focus: NDE `2px solid rgb(41, 23, 22)`. Signed-in pages (activity, loans, requests) and
+login: NOT OBSERVED, need UMD CAS login.
+
+**Labels readable without colour:** PASS (text). The type label (`Journal`, `Book`, `Article`) and
+the indication tags (`Peer Reviewed`, `Open Access`) all have non-empty text (0 empty labels on
+search, Books-filtered search and record). Indication icons are `aria-hidden` with `.sr-only` text
+("This journal has been peer reviewed"). Online availability is the text button "Available Online".
+The tags are the same grey for every type, so colour does not tell types apart. A physical
+availability line (`nde-physical-availability-line`) did not appear in the first 10 results, even
+with Books filtered: NOT OBSERVED. Grayscale screenshots: PENDING-HUMAN.
+
+**Discover-owned issues (not fixed, not masked):**
+1. Chip remove control name is "Use space or delete to remove the active filter", which does not
+   name the value; expected "Remove filter: <value>". Also `tabindex=-1` (reached only with
+   ArrowRight from the chip).
+2. Chip primary action name "Active filter  Articles" has a double space. The dropdown button name
+   "Showing results filtered by Resource Type" leaves out the count.
+3. The open filters panel traps Tab (applied filters can't be reached until "Close filters menu").
+   It stays open after "Apply filters".
+4. Facet counts display as "(0)" / "(-2)" in the panel, while accessible names give real counts
+   (e.g. "New From Last Week 2115 search results").
+5. NDE `cdk-keyboard-focused` focus styles (2 px outline / 1 px box-shadow ring) on quick filters,
+   Apply filters, chip host and menu items. They conflict with our focus ring (see FAILs above).
+
+**FAILs ours (for follow-up, not fixed here):** primary focus ring overridden + focus-layer contrast
+4.26; secondary focus ring overridden + focus-layer contrast 3.80; selected quick filter 4.21; chip
+border is NDE's red, not `--medium-gray` (double outline); user-menu links 4.09.
+
+PENDING-HUMAN: (1) grayscale readability: `search-grayscale.png`, `books-grayscale.png`,
+`record-grayscale.png` vs `*-color.png`; (2) chip double outline/red label: `chip-default.png`,
+`s2-dropdown-open.png`; (3) focus ring visibility: `primary-focus-1500ms-pad.png`,
+`secondary-focus.png`, `chip-focus.png`, `chipremove-focus-programmatic.png`, `titlelink-focus.png`.
+
+Screenshots (scratchpad, not committed), directory
+`/private/tmp/claude-504/-Users-bbradle1-Documents-projects-UMD-Discover-NDE/24ea0b80-79a8-45ee-9fc9-b7c3efdf1d48/scratchpad/t024/shots/`:
+`{primary,secondary,chip,chipremove,card,titlelink}-{default,hover,focus,active}.png`
+(`chipremove-focus-programmatic.png`, `primary-focus-1500ms{,-pad}.png`), `s1-applied.png`,
+`s2-dropdown-open.png`, `s2-chip-focused.png`, `s2-after-remove.png`, `dropdown-open.png`,
+`favorites.png`, `favorites-usermenu.png`. Scripts and raw JSON (`step12.mjs`, `states.mjs`,
+`rules4.mjs`, `pages.mjs`, `states.json`, `pages.json`, `out12.txt`) are in the parent `t024/`.
