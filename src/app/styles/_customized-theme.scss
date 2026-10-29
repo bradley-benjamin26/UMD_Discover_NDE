@@ -1,9 +1,336 @@
+@use 'tokens';
+
 @use '@angular/material' as mat;
 @use 'm3-theme' as m3-theme;
 
-//uncomment the following lines in order to apply your own theme
+@font-face { font-family: 'Crimson Pro'; font-weight: 400; font-style: normal; font-display: swap; src: url('^assets/fonts/CrimsonPro-400.woff2') format('woff2'); }
+@font-face { font-family: 'Crimson Pro'; font-weight: 600; font-style: normal; font-display: swap; src: url('^assets/fonts/CrimsonPro-600.woff2') format('woff2'); }
+@font-face { font-family: 'Crimson Pro'; font-weight: 700; font-style: normal; font-display: swap; src: url('^assets/fonts/CrimsonPro-700.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 600; font-style: normal; font-display: swap; src: url('^assets/fonts/BarlowCondensed-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 700; font-style: italic; font-display: swap; src: url('^assets/fonts/BarlowCondensed-700italic.woff2') format('woff2'); }
+@font-face { font-family: 'Interstate'; font-weight: 400 500; font-style: normal; font-display: swap; src: url('^assets/fonts/Interstate-400-500.otf') format('opentype'); }
+@font-face { font-family: 'Interstate'; font-weight: 600 700; font-style: normal; font-display: swap; src: url('^assets/fonts/Interstate-600-700.otf') format('opentype'); }
 
-//.custom-nde-theme{
-//  @include mat.all-component-colors(m3-theme.$light-theme);
-//  @include mat.system-level-colors(m3-theme.$light-theme);
-//}
+.custom-nde-theme {
+  @include mat.all-component-colors(m3-theme.$light-theme);
+  @include mat.system-level-colors(m3-theme.$light-theme);
+  @include mat.system-level-typography(m3-theme.$light-theme);
+}
+
+// .custom-nde-theme is a class on <body>, so it is both "body" and the scope root.
+.custom-nde-theme {
+  font-family: var(--font-body);
+  // NDE paints landing-page tiles, announcements and chips with this role behind our --maryland-red links;
+  // the generated M3 tint (#ffedeb) gives 4.2:1 there, so use the allowed --white background instead.
+  --sys-inverse-on-surface: var(--white);
+
+  h1, h2, h3 { font-family: var(--font-heading); }
+
+  // :where keeps the old 0,1,1 weight; Material anchor controls keep their own colour and decoration.
+  a:where(:not(.mat-mdc-button-base):not(.mdc-button):not(.mat-mdc-menu-item):not(.mat-mdc-tab-link)) {
+    color: var(--maryland-red);
+    text-decoration: underline;
+    &:hover { color: var(--dark-red); }
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .custom-nde-theme, .custom-nde-theme *, .custom-nde-theme *::before, .custom-nde-theme *::after {
+    // !important: must beat component-level transition/animation declarations.
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .custom-nde-theme :focus-visible { outline: 2px solid Highlight; }
+}
+
+// UMD header and footer (injected into nde-header / nde-footer).
+.custom-nde-theme {
+  .umd-header, .umd-footer { font-family: var(--font-body); }
+
+  .umd-visually-hidden {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .umd-global-bar {
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box; height: 56px;
+    background: var(--maryland-red);
+    color: var(--white);
+    a {
+      display: inline-block; margin-top: 1px; padding: 10px 0;
+      font-family: var(--font-heading); font-size: 14px; font-weight: 400; line-height: 1.3;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--white); text-decoration: none;
+      &:hover { color: var(--white); text-decoration: none; }
+      &:focus-visible { outline: var(--focus-ring-on-dark); outline-offset: var(--focus-offset); }
+    }
+  }
+  @media (min-width: 1100px) {
+    .umd-global-bar { height: 44px; }
+  }
+
+  .umd-header__main {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--space-sm) var(--space-lg); max-width: 1680px; margin-inline: auto;
+    padding: var(--space-md) var(--space-sm);
+  }
+  .umd-header__logo {
+    display: block; flex: 0 0 auto; max-width: 100%;
+    img { display: block; width: auto; max-width: 100%; height: 4rem; object-fit: contain; }
+  }
+  .umd-header__navigation {
+    display: flex; flex: 1 1 36rem; flex-direction: column; align-items: flex-end;
+    gap: var(--space-sm); min-width: 0;
+  }
+  .umd-desktop-navigation {
+    display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-sm);
+  }
+  .umd-mobile-menu { display: none; }
+  .umd-utility-nav > ul, .umd-nav > ul {
+    display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-xs) var(--space-md);
+    list-style: none; margin: 0; padding: 0;
+  }
+  .umd-nav > ul { gap: var(--space-sm) var(--space-md); }
+  .umd-utility-nav__item, .umd-nav__item {
+    display: flex; align-items: center; gap: var(--space-xs); position: relative;
+    list-style: none;
+  }
+  .umd-utility-nav__item + .umd-utility-nav__item {
+    border-inline-start: 1px solid currentColor; padding-inline-start: var(--space-sm);
+  }
+  .umd-utility-nav__link, .umd-nav__link {
+    color: var(--darker-gray);
+    text-decoration: none;
+    &:hover { color: var(--darker-gray); text-decoration: underline; }
+  }
+  .umd-utility-nav__link { font-family: var(--font-body); font-size: var(--text-sm); }
+  .umd-nav__link { font-family: var(--font-body); font-size: var(--text-base); font-weight: 700; }
+  .umd-menu {
+    position: static;
+    summary {
+      display: grid; width: 1.5rem; height: 1.5rem; place-items: center;
+      cursor: pointer; list-style: none;
+      &::-webkit-details-marker { display: none; }
+    }
+  }
+  .umd-menu__chevron {
+    display: block; width: 0.5rem; height: 0.5rem;
+    border-right: 2px solid var(--maryland-red); border-bottom: 2px solid var(--maryland-red);
+    transform: translateY(-0.125rem) rotate(45deg);
+  }
+  .umd-menu[open] .umd-menu__chevron { transform: translateY(0.125rem) rotate(225deg); }
+  .umd-menu__panel {
+    position: absolute; z-index: 20; top: calc(100% + var(--space-xs)); right: 0;
+    width: max-content; min-width: 13rem; max-width: min(24rem, calc(100vw - 2rem));
+    padding: var(--space-sm); border: 1px solid var(--light-gray);
+    border-top: 2px solid var(--maryland-red); background: var(--white);
+    ul { display: grid; gap: var(--space-xs); margin: 0; padding: 0; list-style: none; }
+  }
+  .umd-menu__link {
+    display: block; padding: var(--space-xs); color: var(--darker-gray);
+    font-family: var(--font-body); text-decoration: none; white-space: normal;
+    &:hover { color: var(--darker-gray); background: var(--lighter-gray); text-decoration: underline; }
+  }
+  .umd-menu summary:focus-visible, .umd-menu__link:focus-visible {
+    outline: var(--focus-ring); outline-offset: var(--focus-offset);
+  }
+  .umd-mobile-menu summary {
+    display: grid; width: 3rem; height: 3rem; place-items: center;
+    cursor: pointer; list-style: none;
+    &::-webkit-details-marker { display: none; }
+    &:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+  }
+  .umd-mobile-menu__icon,
+  .umd-mobile-menu__icon::before,
+  .umd-mobile-menu__icon::after {
+    display: block; width: 1.5rem; height: 2px; background: var(--darker-gray);
+  }
+  .umd-mobile-menu__icon { position: relative; }
+  .umd-mobile-menu__icon::before, .umd-mobile-menu__icon::after {
+    position: absolute; left: 0; content: "";
+  }
+  .umd-mobile-menu__icon::before { top: -0.5rem; }
+  .umd-mobile-menu__icon::after { top: 0.5rem; }
+  .umd-mobile-menu[open] .umd-mobile-menu__icon { background: transparent; }
+  // Forced colors drops background colours, which would erase the bars.
+  @media (forced-colors: active) {
+    .umd-mobile-menu__icon, .umd-mobile-menu__icon::before, .umd-mobile-menu__icon::after { forced-color-adjust: none; background: CanvasText; }
+  }
+  .umd-mobile-menu[open] .umd-mobile-menu__icon::before { top: 0; transform: rotate(45deg); }
+  .umd-mobile-menu[open] .umd-mobile-menu__icon::after { top: 0; transform: rotate(-45deg); }
+  .umd-mobile-menu__panel {
+    position: absolute; z-index: 20; top: 100%; right: 0;
+    box-sizing: border-box; width: min(28rem, calc(100vw - 2rem)); max-height: min(75vh, 40rem);
+    overflow: auto; padding: var(--space-md); border: 1px solid var(--light-gray);
+    border-top: 2px solid var(--maryland-red); background: var(--white);
+  }
+  .umd-mobile-menu__panel nav + nav { margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--light-gray); }
+  .umd-mobile-menu__panel ul { display: grid; gap: var(--space-sm); margin: 0; padding: 0; list-style: none; }
+  .umd-mobile-menu__panel li > a {
+    display: block; padding: var(--space-xs); color: var(--darker-gray);
+    font-family: var(--font-body); text-decoration: none;
+    &:hover { color: var(--darker-gray); background: var(--lighter-gray); text-decoration: underline; }
+  }
+  .umd-mobile-menu__primary > ul > li > a { font-weight: 700; }
+  .umd-mobile-menu__primary ul ul {
+    gap: var(--space-xs); margin-top: var(--space-xs); padding-inline-start: var(--space-sm);
+  }
+  .umd-mobile-menu__primary ul ul a { font-size: var(--text-sm); font-weight: 400; }
+  .umd-mobile-menu__utility ul ul {
+    gap: var(--space-xs); margin-top: var(--space-xs); padding-inline-start: var(--space-sm);
+  }
+  .umd-mobile-menu__utility ul ul a { font-size: var(--text-sm); }
+  .umd-mobile-menu__panel a:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+  @media (max-width: 77.5rem) {
+    .umd-header__main { flex-wrap: nowrap; align-items: center; position: relative; }
+    .umd-header__logo img { height: 3rem; }
+    .umd-header__navigation { flex: 0 0 auto; }
+    .umd-desktop-navigation { display: none; }
+    .umd-mobile-menu { display: block; position: static; }
+  }
+
+  .umd-footer {
+    background: var(--black); color: var(--white);
+    a { color: var(--white); &:hover { color: var(--white); text-decoration: underline; } }
+    h2 { font-family: var(--font-heading); font-size: var(--text-xl); margin: 0 0 var(--space-xs); }
+    ul { list-style: none; margin: 0; padding: 0; }
+    address { font-style: normal; }
+  }
+  .umd-footer__main, .umd-footer__bottom {
+    max-width: 1440px; margin-inline: auto; padding: var(--space-lg) var(--space-sm);
+  }
+  .umd-footer__main {
+    display: grid; gap: var(--space-md);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  }
+  .umd-footer__brand img { max-width: 100%; height: auto; }
+  .umd-footer__name { font-family: var(--font-heading); font-size: var(--text-xl); margin: var(--space-xs) 0; }
+  .umd-footer__social ul { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+  .umd-footer__icon { width: 1.5rem; height: 1.5rem; fill: currentColor; }
+  .umd-footer__bottom ul { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+
+  .umd-global-bar :focus-visible, .umd-footer :focus-visible {
+    outline: var(--focus-ring-on-dark);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+// Component styles (data-model.md "Component styles"; selectors from research.md "Spike findings").
+// Material components are restyled through their own --mdc-* tokens, so Material's disabled rules
+// (which read the separate *-disabled-* tokens) are left untouched.
+.custom-nde-theme {
+  // Primary: Material's M3 tone-40 primary is not Maryland red, so set the fill explicitly.
+  .mat-mdc-unelevated-button.mat-primary {
+    --mdc-filled-button-container-color: var(--maryland-red);
+    --mdc-filled-button-label-text-color: var(--white);
+    --mdc-filled-button-container-shape: var(--radius-sm);
+    // .cdk-focused: Material lays a 12% white focus layer on the fill; on --maryland-red that is 4.26:1.
+    &:not(:disabled):is(:hover, :active), &.cdk-focused:not(:disabled) { --mdc-filled-button-container-color: var(--dark-red); }
+  }
+
+  .mat-mdc-outlined-button {
+    --mdc-outlined-button-label-text-color: var(--maryland-red);
+    --mdc-outlined-button-outline-color: var(--maryland-red);
+    --mdc-outlined-button-outline-width: 1px;
+    background-color: var(--white);
+    // NDE's quick filters set color/border-color directly (.quick-filter-btn-unselected), so restate them from the tokens.
+    &:not(:disabled) {
+      color: var(--mdc-outlined-button-label-text-color);
+      border-color: var(--mdc-outlined-button-outline-color);
+    }
+    // .cdk-focused: Material lays a 12% primary focus layer on the fill; --maryland-red text on it is 3.80:1.
+    &:not(:disabled):is(:hover, :active), &.cdk-focused:not(:disabled) {
+      --mdc-outlined-button-label-text-color: var(--dark-red);
+      background-color: var(--lightest-gray);
+    }
+    // Pressed quick filter: NDE's pink .quick-filter-btn-active background is not a brand pair; fill it instead.
+    &.quick-filter-btn-active:not(:disabled) {
+      --mdc-outlined-button-label-text-color: var(--white);
+      background-color: var(--maryland-red);
+    }
+  }
+
+  .mat-mdc-unelevated-button.mat-primary, .mat-mdc-outlined-button {
+    &:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+  }
+  // NDE's .cdk-keyboard-focused rules ([0,5,0], loaded after us) replace the ring with its own outline/box-shadow.
+  .mdc-button.mat-mdc-unelevated-button.mat-primary.cdk-keyboard-focused:focus-visible,
+  .mdc-button.mat-mdc-outlined-button.cdk-focused.cdk-keyboard-focused:focus-visible {
+    outline: var(--focus-ring); outline-offset: var(--focus-offset);
+  }
+
+  // The applied-facet chip is a selected mat-chip-option, so the selected-state tokens are the ones in use.
+  // NDE draws the chip border on the host ([0,4,0]); recolour that one and turn off Material's inner outline.
+  nde-selected-filters .mat-mdc-standard-chip.mat-mdc-chip-option.selected-chip {
+    border-color: var(--medium-gray);
+    --mdc-chip-elevated-container-color: var(--white);
+    --mdc-chip-elevated-selected-container-color: var(--white);
+    --mdc-chip-outline-color: var(--medium-gray);
+    --mdc-chip-outline-width: 0;
+    --mdc-chip-flat-selected-outline-width: 0;
+    --mdc-chip-label-text-color: var(--darker-gray);
+    --mdc-chip-selected-label-text-color: var(--darker-gray);
+    --mdc-chip-container-shape-radius: var(--radius-pill);
+    &:hover {
+      --mdc-chip-elevated-container-color: var(--lighter-gray);
+      --mdc-chip-elevated-selected-container-color: var(--lighter-gray);
+    }
+    &:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+  }
+
+  // Markup and ARIA are NDE's (tabindex=-1); only the target size and focus ring are ours.
+  nde-selected-filters .mat-mdc-chip-remove {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 24px; min-height: 24px;
+    &:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+  }
+
+  // Menus (user menu): our global link red on NDE's pink menu surface is 4.09:1.
+  .mat-mdc-menu-panel { --mat-menu-container-color: var(--white); }
+  a.mat-mdc-menu-item { color: var(--darker-gray); }
+
+  nde-record-type .record-type, nde-record-indications .record-indication {
+    background-color: var(--lighter-gray);
+    color: var(--darker-gray);
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    padding-inline: var(--space-xs);
+  }
+
+  nde-search-result-item-container .search-result-item {
+    background-color: var(--white);
+    border: 1px solid var(--light-gray);
+    border-radius: var(--radius-md);
+    &:hover { border-color: var(--medium-gray); }
+  }
+
+  nde-record-title a.record-title {
+    font-family: var(--font-heading);
+    // The highlighted-term spans inside the link get Material's body font, so restate it on them.
+    * { font-family: inherit; }
+    &:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+  }
+}
+
+@media (forced-colors: active) {
+  .custom-nde-theme {
+    .mat-mdc-unelevated-button.mat-primary, .mat-mdc-outlined-button,
+    nde-selected-filters .mat-mdc-chip-option.selected-chip, nde-selected-filters .mat-mdc-chip-remove,
+    nde-search-result-item-container .search-result-item {
+      border: 1px solid CanvasText;
+      &:focus-visible { outline-color: Highlight; }
+    }
+  }
+}

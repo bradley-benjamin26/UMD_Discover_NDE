@@ -1,15 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: (unratified template) → 1.0.0
-- Modified principles: none (initial adoption; all template placeholders replaced)
-- Added principles:
-  I. Accessibility: WCAG 2.2 AA (NON-NEGOTIABLE)
-  II. Privacy by Default
-  III. Spec-Driven Development
-  IV. Test-Driven Development (NON-NEGOTIABLE)
-  V. Correctness Over Appearance
-  VI. Simplicity and Efficiency
-- Added sections: Quality Gates, Development Workflow, Governance
+- Version change: 1.0.0 → 1.1.0
+- Modified principles: II. Privacy by Default (added a narrow, disclosed exception for subject
+  heading lookups at the Library of Congress)
+- Added sections: none
 - Removed sections: none
 - Follow-up TODOs: none
 -->
@@ -48,6 +42,11 @@ User privacy MUST take priority over convenience, analytics, or feature richness
   privacy review in the feature spec.
 - Patron data (identity, searches, loans, saved items) MUST NOT be logged, persisted to browser
   storage, or sent to any service other than the Ex Libris platform that already holds it.
+- Exception: words from a patron's search MAY be sent to the Library of Congress subject
+  authority service (id.loc.gov) to suggest subject headings, provided that only search words
+  are sent (no identity, session, or record data), the patron is told on screen, the number of
+  requests per search is bounded, and failure never affects search. Any other exception requires
+  a constitution amendment.
 - Secrets and credentials MUST NOT be committed to the repository.
 - Any new data flow MUST be described in the spec, including what is sent, where, and why.
 
@@ -142,4 +141,4 @@ This constitution supersedes other project practices where they conflict.
 - Compliance is reviewed at every plan (Constitution Check) and every pull request review.
   Exceptions MUST be documented with rationale in the relevant plan.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-28 | **Last Amended**: 2026-10-28
+**Version**: 1.1.0 | **Ratified**: 2026-10-28 | **Last Amended**: 2026-10-28

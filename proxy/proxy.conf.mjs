@@ -14,6 +14,8 @@ const assetContentTypes = {
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
+  '.otf': 'font/otf',
+  '.woff2': 'font/woff2',
 };
 
 function getAssetContentType(filePath) {
