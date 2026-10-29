@@ -95,3 +95,50 @@ intercepted and the four declarations swapped back to the previous `var(--text-l
 - Scripts and screenshots: session scratchpad `t007-002/fix.mjs`, `out-*.txt`, `fix-16-320.png`, `fix-20-320.png`.
 
 Check 2 is now PASS.
+
+## Final review fixes
+
+Live on `npm run start:proxy` port 4202, headless Chrome with the default font size set through the profile's
+Preferences; searches `cats` and `cats` + `facet=tlevel,include,online_resources` (quicklinks). Script: session
+scratchpad `t007-002/lh.mjs`; logs `.superpowers/sdd/tasks/FR-*.log`.
+
+### I1: wrapped availability lines collided once the text scaled
+
+- Reproduction (default 24, before): print labels 27.6px with NDE's `line-height: 24px` (ratio 0.87). "Available at UMCP
+  McKeldin Library Media VHS…" wrapped to 5 lines at 320 and 3 at 640, line step 26px < 27.6px glyphs, so lines touch
+  (screenshot `fr-before-cats-24-320.png`). Quicklink labels: line-height 32px, single line.
+- Tests: `002: .custom-nde-theme .available-at-button.mdc-button .mdc-button__label line-height is unitless (scales with
+  the text)` and the same for `.custom-nde-theme .quicklink-button .mdc-button__label`.
+  RED: both failed "no line-height rule" (67 tests, 2 fail). GREEN after adding `line-height: 1.3` to both label rules (67/67).
+- Live (default 24, after): computed line-height 35.88px = 1.3 × 27.6 on every label (beats NDE's rule); line step 35px,
+  0 overlaps at 320 and 640.
+
+### M1: quicklink button fixed at 32px
+
+- Before I1: did not reproduce beyond 1px. Default 24 at 320 and 640: scrollHeight 31 / clientHeight 30, label inside
+  the button, 1 line.
+- After I1: reproduced. The 35.88px label line in NDE's fixed `height: 32px` button
+  (`.quicklink-button.mat-mdc-button[_ngcontent…]`, specificity (0,3,0)): scrollHeight 33 > clientHeight 30 (3px), label
+  bottom 1.9px below the button at 320 and 640.
+- Test: `002: quicklink button height grows with its label (height: auto, 32px floor), beating NDE (0,3,0)`.
+  RED: "expected height: auto; found []" (68 tests, 1 fail). GREEN after adding
+  `.quicklink-button.mat-mdc-button.mdc-button { height: auto; min-height: 32px; }` (0,4,0) (68/68). The existing no-px
+  test covers font-size only; the 32px min-height floor keeps NDE's size at default text size.
+
+### Live re-verify (after both fixes)
+
+| Default | Width | Print label | Quicklink label | Line-height ratio | Print max lines | Quicklink button height / overflow | Overlaps | Page scrollWidth |
+|---|---|---|---|---|---|---|---|---|
+| 16 | 1440 | 18.4px | 18.4px | 1.3 | 1 | 32px / 1px (as before) | 0 | 1440 |
+| 16 | 320 | 18.4px | 18.4px | 1.3 | 3 | 32px / 1px | 0 | 324* |
+| 20 | 1440 | 23px | 23px | 1.3 | 1 | 32px / 1px | 0 | 1440 |
+| 20 | 320 | 23px | 23px | 1.3 | 4 | 32px / 1px | 0 | 320 |
+| 24 | 1440 | 27.6px | 27.6px | 1.3 | 2 | 37.86px / 0 | 0 | 1440 |
+| 24 | 320 | 27.6px | 27.6px | 1.3 | 5 | 37.86px / 0 | 0 | 320 |
+| 24 | 640 (quicklinks) | n/a | 27.6px | 1.3 | n/a | 37.86px / 0 | 0 | 640 |
+
+\* Known NDE `show-more-btn` baseline (check 3c), also 324 with the pre-002 CSS; a later reading on the same page
+showed 320 with no element past the viewport. Quicklink label bottoms are inside the button in every run (1 to 4px clear).
+Screenshots: `fr-final-cats-24-320.png`, `fr-final-online-24-320.png`.
+
+Suites: `npm test` Karma TOTAL: 22 SUCCESS; `node --test` 68 tests, 68 pass, 0 fail. `custom.css` 57,859 → 57,981 bytes.
