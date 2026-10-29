@@ -5,7 +5,8 @@ const path = require('node:path');
 
 // Contract: specs/001-umd-design-system/contracts/theme-tokens.md + data-model.md.
 // Runs against the built bundle, so `npm run build` must run first (npm run test:assets does).
-const CSS_PATH = path.join(__dirname, '..', 'dist', '01USMAI_UMCP-NDE', 'custom.css');
+// THEME_CSS overrides the path (used to sanity-check the assertions against a hand-written stylesheet).
+const CSS_PATH = process.env.THEME_CSS || path.join(__dirname, '..', 'dist', '01USMAI_UMCP-NDE', 'custom.css');
 const FONTS_DIR = path.join(__dirname, '..', 'src', 'assets', 'fonts');
 
 const COLOURS = {
@@ -235,4 +236,117 @@ test('stylesheet contains no http:// or https:// reference', () => {
 test('stylesheet is at most 60 KB', () => {
   const size = fs.statSync(CSS_PATH).size;
   assert.ok(size <= 60 * 1024, `custom.css is ${size} bytes`);
+});
+
+// ---- US2: component styles (data-model.md "Component styles"; selectors from research.md "Spike findings") ----
+
+const PRIMARY_BUTTON = '.mat-mdc-unelevated-button.mat-primary';
+const SECONDARY_BUTTON = '.mat-mdc-outlined-button';
+const CHIP = '.selected-chip';
+const CHIP_REMOVE = '.mat-mdc-chip-remove';
+const TAGS = ['.record-type', '.record-indication'];
+const CARD = '.search-result-item';
+const CARD_TITLE = '.record-title';
+const COMPONENTS = { 'primary button': PRIMARY_BUTTON, 'secondary button': SECONDARY_BUTTON, chip: CHIP, 'chip remove': CHIP_REMOVE, 'record-type tag': TAGS[0], 'indication tag': TAGS[1], card: CARD, 'card title link': CARD_TITLE };
+
+// Style rules as { selectors: [...], media: '@media ... @media ...', decls: [{prop, value}] }; at-rule bodies are
+// walked, not recorded. Assumes the built (flat, minified) CSS: no nested style rules, no braces in strings.
+function styleRules(css) {
+  const src = stripComments(css);
+  const out = [];
+  const stack = [];
+  let buf = '';
+  for (const ch of src) {
+    if (ch === '{') {
+      stack.push(buf.slice(buf.lastIndexOf(';') + 1).trim()); // drop any preceding `@charset ...;`
+      buf = '';
+    } else if (ch === '}') {
+      const head = stack.pop() ?? '';
+      if (head && !head.startsWith('@')) {
+        // shortcut: splits on every comma, so `:is(a, b)` selectors split wrongly; fine for the selectors used here.
+        out.push({ selectors: head.split(',').map((x) => x.trim()), media: stack.filter((h) => h.startsWith('@')).join(' '), decls: declarations(buf + ';') });
+      }
+      buf = '';
+    } else {
+      buf += ch;
+    }
+  }
+  return out;
+}
+
+const rulesFor = (css, component, extra = '') => styleRules(css).filter((r) => r.selectors.some((x) => x.includes(component) && x.includes(extra)));
+
+// px, or rem/em at 16px.
+function toPx(value) {
+  const m = /^([\d.]+)(px|rem|em)$/.exec(value.trim());
+  return m ? parseFloat(m[1]) * (m[2] === 'px' ? 1 : 16) : NaN;
+}
+
+// Some rule for `component` (outside media queries) declares one of `props` with a value containing `want`.
+function assertDeclares(css, label, component, props, want) {
+  const found = rulesFor(css, component).filter((r) => !r.media).flatMap((r) => r.decls).filter((d) => props.includes(d.prop));
+  assert.ok(found.some((d) => d.value.includes(want)), `${label} (${component}): expected one of ${props.join(' / ')} to use ${want}; found ${JSON.stringify(found)}`);
+}
+
+test('US2: chip remove control is at least 24x24 px', () => {
+  const decls = rulesFor(readCss(), CHIP_REMOVE).flatMap((r) => r.decls);
+  for (const prop of ['min-width', 'min-height']) {
+    const sizes = decls.filter((d) => d.prop === prop).map((d) => toPx(d.value));
+    assert.ok(sizes.some((px) => px >= 24), `${CHIP_REMOVE} needs ${prop} >= 24px; found ${JSON.stringify(sizes)}`);
+  }
+});
+
+test('US2: buttons, chip, chip remove and card title link have a :focus-visible rule using --focus-ring', () => {
+  const css = readCss();
+  const missing = Object.entries({ 'primary button': PRIMARY_BUTTON, 'secondary button': SECONDARY_BUTTON, chip: CHIP, 'chip remove': CHIP_REMOVE, 'card title link': CARD_TITLE })
+    .filter(([, sel]) => !rulesFor(css, sel, ':focus-visible').filter((r) => !r.media).flatMap((r) => r.decls)
+      .some((d) => d.prop === 'outline' && d.value.includes('var(--focus-ring)')))
+    .map(([label, sel]) => `${label} (${sel})`);
+  assert.deepEqual(missing, [], 'no `<component>:focus-visible { outline: var(--focus-ring) }` rule');
+});
+
+test('US2: prefers-reduced-motion removes transitions on chips, buttons and cards', () => {
+  // Ruling: a `.custom-nde-theme *` rule covers every component, so it is accepted alongside explicit selectors.
+  const rules = styleRules(readCss()).filter((r) => r.media.includes('prefers-reduced-motion') && r.decls.some((d) => d.prop.startsWith('transition')));
+  const covers = (sel) => rules.some((r) => r.selectors.some((x) => x.includes(sel) || /^\.custom-nde-theme \*$/.test(x)));
+  const missing = [CHIP, '.mat-mdc-unelevated-button', SECONDARY_BUTTON, CARD].filter((sel) => !covers(sel));
+  assert.deepEqual(missing, [], 'components without a reduced-motion transition rule');
+});
+
+test('US2: forced-colors block has explicit chip, button and card rules', () => {
+  const css = readCss();
+  const missing = [CHIP, CHIP_REMOVE, PRIMARY_BUTTON, SECONDARY_BUTTON, CARD]
+    .filter((sel) => !rulesFor(css, sel).some((r) => r.media.includes('forced-colors')));
+  assert.deepEqual(missing, [], 'components without a rule inside @media (forced-colors: active)');
+});
+
+test('US2: component rules exist and declare no colour literals', () => {
+  const css = readCss();
+  const problems = Object.entries(COMPONENTS).flatMap(([label, sel]) => {
+    const rules = rulesFor(css, sel);
+    if (!rules.length) return [`${label} (${sel}): no rules`];
+    return rules.flatMap((r) => r.decls).filter((d) => COLOUR_LITERAL.test(d.value)).map((d) => `${label} (${sel}): ${d.prop}: ${d.value}`);
+  });
+  assert.deepEqual(problems, []);
+});
+
+// Accepted: the plain CSS property, or the Material 18 token Material itself reads for that slot.
+test('US2: primary button fill is --maryland-red', () => {
+  assertDeclares(readCss(), 'primary button', PRIMARY_BUTTON, ['background', 'background-color', '--mdc-filled-button-container-color'], 'var(--maryland-red)');
+});
+
+test('US2: secondary button text is --maryland-red', () => {
+  assertDeclares(readCss(), 'secondary button', SECONDARY_BUTTON, ['color', '--mdc-outlined-button-label-text-color'], 'var(--maryland-red)');
+});
+
+test('US2: chip border is --medium-gray', () => {
+  assertDeclares(readCss(), 'chip', CHIP, ['border', 'border-color', '--mdc-chip-outline-color'], 'var(--medium-gray)');
+});
+
+test('US2: result card border is --light-gray', () => {
+  assertDeclares(readCss(), 'card', CARD, ['border', 'border-color'], 'var(--light-gray)');
+});
+
+test('US2: tags have a --lighter-gray background', () => {
+  for (const sel of TAGS) assertDeclares(readCss(), 'tag', sel, ['background', 'background-color'], 'var(--lighter-gray)');
 });

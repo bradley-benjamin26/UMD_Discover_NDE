@@ -141,3 +141,32 @@ PENDING-HUMAN: (1) header/footer likeness vs. lib.umd.edu — compare `*-1440-he
 rendering — `*-forced.png`, `*-forced-header-focus.png`; (3) fallback-font layout —
 `*-fontsblocked*.png`. Not run here: axe scan, keyboard/facet-chip checks, load-time baseline (not
 in T020 scope).
+
+## T021 — US2 assertions fail before implementation (RED)
+
+`npm run test:assets` (2026-10-28): tests 44, pass 35, fail 9. All 34 earlier tests pass. 10 US2 tests were added:
+
+```
+✖ US2: chip remove control is at least 24x24 px            — .mat-mdc-chip-remove needs min-width >= 24px; found []
+✖ US2: buttons, chip, chip remove and card title link have a :focus-visible rule using --focus-ring
+                                                              — all 5 components missing
+✖ US2: forced-colors block has explicit chip, button and card rules — all 5 selectors missing
+✖ US2: component rules exist and declare no colour literals — all 8 components: "no rules"
+✖ US2: primary button fill is --maryland-red                — found []
+✖ US2: secondary button text is --maryland-red              — found []
+✖ US2: chip border is --medium-gray                         — found []
+✖ US2: result card border is --light-gray                   — found []
+✖ US2: tags have a --lighter-gray background                — found []
+✔ US2: prefers-reduced-motion removes transitions on chips, buttons and cards
+```
+
+None of the component selectors appear in the built `custom.css` (grep count 0). Material sets its
+`--mdc-*` button and chip tokens only on `.custom-nde-theme`, so these failures come from the missing
+component rules and not from the parser.
+
+Reduced motion passes already: the T012 `.custom-nde-theme *` rule inside `@media (prefers-reduced-motion: reduce)`
+sets `transition-duration` on every element, and the test accepts that universal rule (see the ruling in the test).
+
+Sanity check: `THEME_CSS=<file> node --test --test-name-pattern='^US2'` against a hand-written minified
+stylesheet that meets the data model gave pass 10 / fail 0. A copy with `#e6e6e6` as the card border and a
+20px chip remove `min-height` gave fail 3 (24px, literal, card border), which is the expected result.
