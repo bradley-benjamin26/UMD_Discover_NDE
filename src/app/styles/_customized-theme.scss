@@ -325,8 +325,11 @@
 
   // Results availability line (specs/002-results-call-number): size only, colour/content/order stay NDE's.
   // The extra .mdc-button beats NDE's (0,3,0) component rule without !important.
-  .available-at-button.mdc-button .mdc-button__label { font-size: var(--text-lg); }
-  .quicklink-button { font-size: var(--text-lg); }
+  // rem is pinned by Discover's html { font-size: 16px }; `medium` follows the browser default text size (1.15em = 18.4px at 16).
+  .available-at-button.mdc-button { font-size: medium; }
+  .available-at-button.mdc-button .mdc-button__label { font-size: 1.15em; }
+  .quicklink-button { font-size: medium; }
+  .quicklink-button .mdc-button__label { font-size: 1.15em; }
 }
 
 @media (forced-colors: active) {

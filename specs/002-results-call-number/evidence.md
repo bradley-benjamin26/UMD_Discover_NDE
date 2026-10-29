@@ -56,3 +56,42 @@ in the session scratchpad `t007-002/`.
 FAIL to follow up: check 2. The 1.15rem size does not follow the browser's default text size because NDE pins the root at 16px
 (same as NDE's original 0.875rem). It does follow page zoom. Needs a decision on whether the spec's "browser text size Large" is
 meant to be page zoom or whether a root-relative unit change (e.g. em/percent of the browser default) is wanted; no product code changed here.
+
+## T007 fix — follow browser text size
+
+Fixes check 2 above (FR-003, US1 scenario 3). User-approved change: size from the browser default via the `medium`
+keyword instead of rem. `.available-at-button.mdc-button` and `.quicklink-button` get `font-size: medium`; their
+`.mdc-button__label` gets `font-size: 1.15em` (16 × 1.15 = 18.4px at default settings). No px, no `!important`; no
+extra specificity needed (live shows our rules win).
+
+**RED** (`tests/theme-tokens.test.js` "002:" tests rewritten to the new contract: four rules, button `medium`, label `1.15em`;
+build + `node --test` against the old CSS): `ℹ tests 65 / pass 61 / fail 4` — the two new rules missing ("no font-size rule")
+and the two changed ones still `var(--text-lg)`.
+
+**GREEN** (`npm run test:assets`): `ℹ tests 65 / pass 65 / fail 0`. Built `custom.css` 57,859 bytes.
+
+**Live** (proxy on port 4202, `/nde/search?query=cats&vid=01USMAI_UMCP:NDE&lang=en`, headless Chrome, default font size set
+through the profile's Preferences `webkit.webprefs.default_font_size`, the T007 method). "Old" = same page with custom.css
+intercepted and the four declarations swapped back to the previous `var(--text-lg)` rules. Every non-empty text node inside
+`.available-at-button` and `.quicklink-button` was measured at its parent element: `span.availability-code`, `span.bold-text`
+(print, 7 buttons) and the quicklink inner `span` (3 buttons, "Available Online"/"See Request Options"). Text outside
+`.mdc-button__label`: none found. Root stays 16px in all runs.
+
+| Default size | Width | Old (var(--text-lg)) | New (medium × 1.15em) | Print button heights old → new | Quicklink height | Max label lines old → new |
+|---|---|---|---|---|---|---|
+| 16 | 1440 | 18.4px all | 18.4px all | 26 → 25 | 32 (fixed by NDE) | 1 → 1 |
+| 16 | 320 | 18.4px all | 18.4px all | 26/78 → 25/75 | 32 | 3 → 3 |
+| 20 | 1440 | 18.4px all (bug) | **23px all** | 26 → 26 | 32 | 1 → 1 |
+| 20 | 320 | 18.4px all (bug) | **23px all** | 26/78 → 26/104 | 32 | 3 → 4 |
+
+- Wrap/clipping: 0 elements with scrollWidth > clientWidth in any run. Page horizontal scroll at 320: 324/320 at default
+  in both old and new (the known NDE `show-more-btn` baseline, check 3c); 320/320 at 20.
+- Vertical: print buttons report scrollHeight 37 > clientHeight 25/26 in old and new alike; that is Material's 48px touch
+  target, not text. At 20/320 the 4-line print button's content is 2px taller than its box (106 > 104), overflow visible, so
+  nothing is clipped; NDE's 24px line-height makes 23px lines tight but not overlapping (screenshot `fix-20-320.png`).
+  Quicklink buttons keep NDE's fixed 32px height; their 23px text box (28px) sits inside it (2px top and bottom).
+- Icons: no `mat-icon` inside these buttons on this page. At default size, print buttons are 1px shorter per line
+  (26 → 25; the button's own font-size is now `medium` instead of NDE's value); cause not investigated further, text unaffected.
+- Scripts and screenshots: session scratchpad `t007-002/fix.mjs`, `out-*.txt`, `fix-16-320.png`, `fix-20-320.png`.
+
+Check 2 is now PASS.

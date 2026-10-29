@@ -512,13 +512,18 @@ test('Final I5: the global link rule skips Material anchor controls', () => {
 
 // ---- 002: availability line size (specs/002-results-call-number, FR-003) ----
 
-const AVAILABILITY = '.custom-nde-theme .available-at-button.mdc-button .mdc-button__label';
-const AVAILABLE_NOW = '.custom-nde-theme .quicklink-button';
-for (const [label, sel] of [['availability line', AVAILABILITY], ['Available now link', AVAILABLE_NOW]]) {
-  test(`002: ${label} font-size is var(--text-lg), not px, no !important`, () => {
-    const sizes = rulesFor(readCss(), sel).filter((r) => !r.media && r.selectors.some((x) => x.includes(sel))).flatMap((r) => r.decls).filter((d) => d.prop === 'font-size');
+// rem is pinned by Discover's html { font-size: 16px }; `medium` follows the browser default, 1.15em keeps 18.4px at 16.
+const SIZE_RULES = [
+  ['availability button', '.custom-nde-theme .available-at-button.mdc-button', 'medium'],
+  ['availability label', '.custom-nde-theme .available-at-button.mdc-button .mdc-button__label', '1.15em'],
+  ['Available now button', '.custom-nde-theme .quicklink-button', 'medium'],
+  ['Available now label', '.custom-nde-theme .quicklink-button .mdc-button__label', '1.15em'],
+];
+for (const [label, sel, want] of SIZE_RULES) {
+  test(`002: ${label} font-size is ${want} (follows browser text size), not px, no !important`, () => {
+    const sizes = styleRules(readCss()).filter((r) => !r.media && r.selectors.includes(sel)).flatMap((r) => r.decls).filter((d) => d.prop === 'font-size');
     assert.ok(sizes.length, `no font-size rule for ${sel}`);
-    assert.ok(sizes.some((d) => /^var\(--text-lg\)$/.test(d.value)), `${sel}: expected font-size: var(--text-lg); found ${JSON.stringify(sizes)}`);
+    assert.ok(sizes.some((d) => d.value === want), `${sel}: expected font-size: ${want}; found ${JSON.stringify(sizes)}`);
     assert.deepEqual(sizes.filter((d) => /px|!important/.test(d.value)), [], `${sel}: px or !important font-size`);
   });
 }

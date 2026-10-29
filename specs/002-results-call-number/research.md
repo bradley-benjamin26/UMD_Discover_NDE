@@ -88,3 +88,4 @@ and the books facet, plus newest-first sorts).
 - **`!important` needed**: No, given the specificity bump above (the plain `.custom-nde-theme .available-at-button .mdc-button__label`
   would need it).
 - **`white-space: normal` needed (R2)**: No; Discover already wraps the label. Drop the R2 rule.
+- **Unit (T007 fix)**: `font-size: medium` on both buttons and `1.15em` on their `.mdc-button__label` replaced `var(--text-lg)`, because NDE's `html { font-size: 16px }` pins rem; `medium` follows the browser default (18.4px at 16, 23px at 20).
