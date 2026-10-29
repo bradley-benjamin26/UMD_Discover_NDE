@@ -129,6 +129,13 @@ Screenshots (scratchpad, not committed), directory
 `…-fontsblocked-footer.png` (search 320/640 are viewport-only; full-page capture timed out);
 `libumd-1440-{top,full,footer}.png`. Scripts and raw `results*.json` are in the parent `t020/`.
 
+**Logo fix (2026-10-28):** RED test `img src values resolve under /nde/custom/<inst>-<view>/assets/`
+failed (`header_en.html: img src "assets/header-footer/header-logo.svg" must start with
+./custom/01USMAI_UMCP-NDE/assets/`). Both `<img src>` changed to `./custom/01USMAI_UMCP-NDE/assets/header-footer/…`.
+GREEN: `node --test` pass 34 / fail 0. Proxy mode (:4201): both logo SVGs 200 `image/svg+xml`; home page
+`naturalWidth` header 300, footer 250 (both > 0). Logo images row above is superseded: now PASS on home;
+other pages share the same fragments but were not re-run.
+
 PENDING-HUMAN: (1) header/footer likeness vs. lib.umd.edu — compare `*-1440-header.png` /
 `*-1440-footer.png` with `libumd-1440-top.png` / `libumd-1440-footer.png`; (2) forced-colours
 rendering — `*-forced.png`, `*-forced-header-focus.png`; (3) fallback-font layout —

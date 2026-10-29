@@ -170,3 +170,15 @@ test('footer bottom bar has Give Now, Privacy Policy, Web Accessibility and the 
   for (const name of BOTTOM_LINKS) assert.ok(names.includes(name), `no link named "${name}"`);
   assert.match(accessibleName(html), /© \d{4} University of Maryland/);
 });
+
+test('img src values resolve under /nde/custom/<inst>-<view>/assets/', () => {
+  const env = Object.fromEntries(
+    fs.readFileSync(path.join(__dirname, '..', 'build-settings.env'), 'utf8')
+      .split('\n').map((l) => l.match(/^\s*(\w+)\s*=\s*(.*?)\s*$/)).filter(Boolean).map((m) => [m[1], m[2]]));
+  const prefix = `./custom/${env.INST_ID}-${env.VIEW_ID}/assets/`;
+  for (const name of FILES) {
+    for (const [, attrs] of read(name).matchAll(/<img\b([^>]*)>/gi)) {
+      assert.ok(attr(attrs, 'src')?.startsWith(prefix), `${name}: img src "${attr(attrs, 'src')}" must start with ${prefix}`);
+    }
+  }
+});
