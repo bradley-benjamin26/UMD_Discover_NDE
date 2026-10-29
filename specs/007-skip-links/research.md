@@ -72,3 +72,24 @@ Problems found:
   listeners left after destroy.
 - Manual: first-Tab check on every page type, after navigation, VoiceOver, 320 px / 200%, forced
   colours (quickstart).
+
+## R-autofocus. Overriding Discover's load-time focus (SC-001, SC-002, US1 scenario 1)
+
+**Problem**: Discover calls `putFocusOnSearchInput` on load (search box on home, search, favorites,
+collections), sometimes more than once and up to ~3.5 s after navigation starts. On the record page
+it autofocuses the search input and then blurs whatever is focused (~3.5 s), which leaves the focus
+starting point near the back-to-results button. So a first Tab from load never
+reached the skip link, although the link is first in DOM order.
+
+**Decision** (user, 2026-10-29): override it. `SkipLinkComponent` renders an empty
+`span.umd-skip-start[tabindex=-1]` just before the link. From `ngOnInit`, a `requestAnimationFrame`
+poll runs for ~3 s: while `navigator.userActivation.hasBeenActive` is false and focus is on anything
+other than `body`, the sentinel or the link, it calls `sentinel.focus({ preventScroll: true })`, so
+the next Tab goes to the skip link. Once it has parked focus there, a later fall back to `body`
+(the record page's blur) is parked again; if nothing was ever autofocused, `body` is left alone. It stops for good once the user has interacted, ends after the
+window, is cancelled on destroy, and does nothing when `navigator.userActivation` is unsupported.
+The component is not re-created on in-app navigation, so later pages keep Discover's own focus.
+
+**Trade-off**: the search box is no longer type-ready on load; a sighted user must click it (or Tab
+to it) before typing. After any click or key press we never move focus again. **VoiceOver/NVDA
+behaviour with focus parked on an empty span at load: PENDING-HUMAN.**
