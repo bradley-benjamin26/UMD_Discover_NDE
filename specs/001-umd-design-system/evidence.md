@@ -304,3 +304,29 @@ Screenshots (scratchpad, not committed), directory
 `s2-dropdown-open.png`, `s2-chip-focused.png`, `s2-after-remove.png`, `dropdown-open.png`,
 `favorites.png`, `favorites-usermenu.png`. Scripts and raw JSON (`step12.mjs`, `states.mjs`,
 `rules4.mjs`, `pages.mjs`, `states.json`, `pages.json`, `out12.txt`) are in the parent `t024/`.
+
+### T024 fixes (2026-10-28)
+
+Root causes were read live with CDP `CSS.getMatchedStylesForNode` on :4202. Material's focus layer was
+modelled as a 12% layer over the fill (white on filled buttons, NDE's M3 primary `rgb(191, 0, 37)` on
+outlined buttons). The model gives `rgb(229, 52, 75)` [4.26] and `rgb(247, 224, 229)` [3.80], which
+match the T024 pixels exactly. RED: 7 new tests in `tests/theme-tokens.test.js` ("US2 T024: …") failed,
+each because its rule was missing (44 pass / 7 fail). GREEN: `npm run test:assets` 51/51 pass (log
+`.superpowers/sdd/tasks/t024fix.log`), `custom.css` 50,649 bytes, no `!important` added. Live check:
+real Tab key presses, signed out, search `climate`. The fill is the most common pixel inside the
+element screenshot (`scratchpad/t024fix/shots/`, script `verify.mjs`).
+
+| # | Root cause (NDE selector) | RED test | GREEN (`_customized-theme.scss`) | Live result |
+|---|---|---|---|---|
+| 1 | `.mdc-button.mat-mdc-unelevated-button.apply-filters-btn.cdk-keyboard-focused[_ngcontent]` [0,5,0] sets `outline:none`; Material's 12% white focus layer on `--maryland-red` | "primary button keyboard-focus ring … outranks NDE's .cdk-keyboard-focused rule"; "primary button focus fill keeps white text >= 4.5 under Material focus layer" | `.mdc-button.mat-mdc-unelevated-button.mat-primary.cdk-keyboard-focused:focus-visible` [0,6,0] → `outline: var(--focus-ring)`; `.cdk-focused` → fill `--dark-red` (same as hover/active) | outline `3px solid rgb(36, 36, 36)`; rendered fill `rgb(179, 31, 37)`, white [6.69]. NDE's box-shadow (2px white + 1px black) still sits under the ring |
+| 2 | `.quick-filters-container[_ngcontent] .cdk-focused.cdk-keyboard-focused[_ngcontent]` [0,5,0] `outline: 2px solid var(--sys-on-background)`; 12% primary focus layer under `--maryland-red` text | "secondary button keyboard-focus ring …"; "secondary button focus text >= 4.5 under Material focus layer" | `.mdc-button.mat-mdc-outlined-button.cdk-focused.cdk-keyboard-focused:focus-visible` [0,6,0] → ring; `.cdk-focused` → `--dark-red` text, `--lightest-gray` bg (same as hover) | outline `3px solid rgb(36, 36, 36)`; fill `rgb(243, 220, 224)`, text `rgb(169, 0, 7)` [5.99] |
+| 3 | `.quick-filter-btn-active.mdc-button[_ngcontent]` [0,3,0] pink `--sys-inverse-on-surface` background under our red text | "selected quick filter uses an allowed pair and outranks NDE .quick-filter-btn-active" | `.mat-mdc-outlined-button.quick-filter-btn-active:not(:disabled)` [0,4,0] → `--white` text on `--maryland-red` fill (allowed pair) | default white on `rgb(226, 24, 51)` [4.76]; focused fill `rgb(222, 21, 49)` [4.93], ring `3px solid rgb(36, 36, 36)` |
+| 4 | `.mat-mdc-standard-chip.mdc-evolution-chip--selectable:not(.mdc-evolution-chip--with-primary-icon)` [0,4,0] `border: 1px solid var(--sys-primary)` on the host, plus Material's `--mdc-chip-outline-*` ring on the primary action's `::before` | "chip has a single --medium-gray border that outranks NDE selectable-chip border" | chip selector raised to `nde-selected-filters .mat-mdc-standard-chip.mat-mdc-chip-option.selected-chip` [0,4,1], `border-color: var(--medium-gray)`; `--mdc-chip-outline-width` and `--mdc-chip-flat-selected-outline-width` set to 0 | host border `1px solid rgb(117, 117, 117)`, inner `::before` 0px; one border in `chip-default.png` |
+| 5 | our `.custom-nde-theme a` (red) beats `.mat-mdc-menu-item` on NDE's `--mat-sys-surface-container` menu `rgb(255, 233, 231)` (the `<a>` has no href, so Material's `:link` rule does not match) | "menu item links use an allowed pair on the menu surface" | `.mat-mdc-menu-panel { --mat-menu-container-color: var(--white) }`; `a.mat-mdc-menu-item { color: var(--darker-gray) }` | panel `rgb(255, 255, 255)`; 4 links `rgb(36, 36, 36)` [15.52]; "Sign in" [17.1] |
+
+Rulings: (a) the selected quick filter now uses a red fill, not NDE's pink. Dark-red text on pink is
+not in the allowed-pairs table, and a plain white background would lose the pressed look. (b) All
+mat-menus get a white surface, not only the user menu. (c) Primary and secondary `.cdk-focused` (any
+focus origin) take the hover/active colours, because Material's focus layer shows for keyboard and
+programmatic focus. Not changed: NDE's chip-host 2px focus outline (two rings when the chip is focused);
+the chip label still renders red (not measured); disabled states.

@@ -350,3 +350,96 @@ test('US2: result card border is --light-gray', () => {
 test('US2: tags have a --lighter-gray background', () => {
   for (const sel of TAGS) assertDeclares(readCss(), 'tag', sel, ['background', 'background-color'], 'var(--lighter-gray)');
 });
+
+// ---- US2 T024 fixes: NDE focus/selected rules seen live (evidence.md "T024 — US2 manual checks") ----
+
+// Specificity [ids, classes/attrs/pseudo-classes, types] of one complex selector.
+// shortcut: :not()/:is() count as their argument only when it is a single simple selector; fine for the selectors used here.
+function specificity(sel) {
+  const s = sel.replace(/::[\w-]+/g, '').replace(/:(?:not|is)\(/g, '(');
+  const ids = (s.match(/#[\w-]+/g) || []).length;
+  const classes = (s.match(/\.[\w-]+|\[[^\]]*\]|:[\w-]+/g) || []).length;
+  const types = (s.match(/(?:^|[\s>+~(])[a-z][\w-]*/gi) || []).length;
+  return [ids, classes, types];
+}
+const beats = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+
+// Selectors (outside media queries) that match `component` + every `extra`, each with its rule's declarations.
+function selectorsFor(css, component, extras = []) {
+  return styleRules(css).filter((r) => !r.media).flatMap((r) => r.selectors.filter((x) => x.includes(component) && extras.every((e) => x.includes(e))).map((sel) => ({ sel, decls: r.decls })));
+}
+
+// The token a selector set declares for one of `props` (last wins), e.g. 'var(--dark-red)' -> '--dark-red'.
+function declaredToken(found, props) {
+  const d = found.flatMap((f) => f.decls).filter((x) => props.includes(x.prop)).pop();
+  const m = d && /^var\((--[-\w]+)\)$/.exec(d.value);
+  return m ? m[1] : undefined;
+}
+
+// Material paints a focus state layer over the button fill at 12% (--mat-sys-focus-state-layer-opacity): white on
+// filled buttons (on-primary), NDE's M3 primary rgb(191, 0, 37) on outlined buttons. Measured live in T024.
+const FOCUS_LAYER = { filled: '#FFFFFF', outlined: '#BF0025', opacity: 0.12 };
+function blend(bg, layer, a) {
+  const ch = (h, i) => parseInt(normHex(h).slice(i, i + 2), 16);
+  return '#' + [1, 3, 5].map((i) => Math.round(ch(bg, i) * (1 - a) + ch(layer, i) * a).toString(16).padStart(2, '0')).join('');
+}
+const isAllowedPair = (fg, bg) => ALLOWED_PAIRS.some(([f, b, min]) => f === fg && b === bg && min === 4.5);
+
+// NDE: .quick-filters-container[_ngcontent] .cdk-focused.cdk-keyboard-focused[_ngcontent] and
+// .mdc-button.mat-mdc-unelevated-button.apply-filters-btn.cdk-keyboard-focused[_ngcontent] are both [0,5,0] and load after custom.css.
+const NDE_KEYBOARD_FOCUS = [0, 5, 0];
+
+for (const [label, component] of [['primary', PRIMARY_BUTTON], ['secondary', SECONDARY_BUTTON]]) {
+  test(`US2 T024: ${label} button keyboard-focus ring uses --focus-ring and outranks NDE's .cdk-keyboard-focused rule`, () => {
+    const found = selectorsFor(readCss(), component, ['.cdk-keyboard-focused'])
+      .filter((f) => f.decls.some((d) => d.prop === 'outline' && d.value.includes('var(--focus-ring)')));
+    assert.ok(found.some((f) => beats(specificity(f.sel), NDE_KEYBOARD_FOCUS) > 0),
+      `need a ${component}.cdk-keyboard-focused rule with outline: var(--focus-ring) and specificity > ${NDE_KEYBOARD_FOCUS}; found ${JSON.stringify(found.map((f) => [f.sel, specificity(f.sel)]))}`);
+  });
+}
+
+test('US2 T024: primary button focus fill keeps white text >= 4.5 under Material focus layer', () => {
+  const css = readCss();
+  const fill = declaredToken(selectorsFor(css, PRIMARY_BUTTON, ['.cdk-focused']), ['--mdc-filled-button-container-color', 'background-color']);
+  assert.ok(fill, `no ${PRIMARY_BUTTON}.cdk-focused fill token`);
+  const ratio = contrast(resolveColour(css, '--white'), blend(resolveColour(css, fill), FOCUS_LAYER.filled, FOCUS_LAYER.opacity));
+  assert.ok(ratio >= 4.5, `white on ${fill} + focus layer = ${ratio.toFixed(2)}`);
+});
+
+test('US2 T024: secondary button focus text >= 4.5 under Material focus layer', () => {
+  const css = readCss();
+  const found = selectorsFor(css, SECONDARY_BUTTON, ['.cdk-focused']);
+  const text = declaredToken(found, ['color', '--mdc-outlined-button-label-text-color']);
+  const bg = declaredToken(found, ['background-color', 'background']);
+  assert.ok(text && bg, `no ${SECONDARY_BUTTON}.cdk-focused text/background tokens: ${text} / ${bg}`);
+  const ratio = contrast(resolveColour(css, text), blend(resolveColour(css, bg), FOCUS_LAYER.outlined, FOCUS_LAYER.opacity));
+  assert.ok(ratio >= 4.5, `${text} on ${bg} + focus layer = ${ratio.toFixed(2)}`);
+});
+
+test('US2 T024: selected quick filter uses an allowed pair and outranks NDE .quick-filter-btn-active', () => {
+  const css = readCss();
+  // NDE: .quick-filter-btn-active.mdc-button[_ngcontent] [0,3,0] sets the pink background.
+  const found = selectorsFor(css, '.quick-filter-btn-active').filter((f) => beats(specificity(f.sel), [0, 3, 0]) > 0);
+  const text = declaredToken(found, ['color', '--mdc-outlined-button-label-text-color']);
+  const bg = declaredToken(found, ['background-color', 'background']);
+  assert.ok(text && bg && isAllowedPair(text, bg), `selected quick filter text/background ${text} / ${bg} is not an allowed pair`);
+  const focused = contrast(resolveColour(css, text), blend(resolveColour(css, bg), FOCUS_LAYER.outlined, FOCUS_LAYER.opacity));
+  assert.ok(focused >= 4.5, `selected + focus layer = ${focused.toFixed(2)}`);
+});
+
+test('US2 T024: chip has a single --medium-gray border that outranks NDE selectable-chip border', () => {
+  const css = readCss();
+  // NDE: .mat-mdc-standard-chip.mdc-evolution-chip--selectable:not(.mdc-evolution-chip--with-primary-icon) [0,4,0] border: 1px solid var(--sys-primary).
+  const found = selectorsFor(css, CHIP).filter((f) => beats(specificity(f.sel), [0, 4, 0]) > 0);
+  assert.equal(declaredToken(found, ['border-color']), '--medium-gray', `no ${CHIP} border-color: var(--medium-gray) above [0,4,0]`);
+  const inner = selectorsFor(css, CHIP).flatMap((f) => f.decls).filter((d) => ['--mdc-chip-outline-width', '--mdc-chip-flat-selected-outline-width'].includes(d.prop));
+  assert.ok(inner.length && inner.every((d) => d.value === '0'), `Material's inner chip outline must be 0 (single border); found ${JSON.stringify(inner)}`);
+});
+
+test('US2 T024: menu item links use an allowed pair on the menu surface', () => {
+  const css = readCss();
+  const link = selectorsFor(css, 'a.mat-mdc-menu-item').filter((f) => beats(specificity(f.sel), [0, 1, 1]) > 0); // .custom-nde-theme a
+  const text = declaredToken(link, ['color']);
+  const bg = declaredToken(selectorsFor(css, '.mat-mdc-menu-panel'), ['--mat-menu-container-color', 'background-color']);
+  assert.ok(text && bg && isAllowedPair(text, bg), `menu link text/background ${text} / ${bg} is not an allowed pair`);
+});

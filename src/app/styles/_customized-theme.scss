@@ -119,7 +119,8 @@
     --mdc-filled-button-container-color: var(--maryland-red);
     --mdc-filled-button-label-text-color: var(--white);
     --mdc-filled-button-container-shape: var(--radius-sm);
-    &:not(:disabled):is(:hover, :active) { --mdc-filled-button-container-color: var(--dark-red); }
+    // .cdk-focused: Material lays a 12% white focus layer on the fill; on --maryland-red that is 4.26:1.
+    &:not(:disabled):is(:hover, :active), &.cdk-focused:not(:disabled) { --mdc-filled-button-container-color: var(--dark-red); }
   }
 
   .mat-mdc-outlined-button {
@@ -132,23 +133,36 @@
       color: var(--mdc-outlined-button-label-text-color);
       border-color: var(--mdc-outlined-button-outline-color);
     }
-    &:not(:disabled):is(:hover, :active) {
+    // .cdk-focused: Material lays a 12% primary focus layer on the fill; --maryland-red text on it is 3.80:1.
+    &:not(:disabled):is(:hover, :active), &.cdk-focused:not(:disabled) {
       --mdc-outlined-button-label-text-color: var(--dark-red);
       background-color: var(--lightest-gray);
+    }
+    // Pressed quick filter: NDE's pink .quick-filter-btn-active background is not a brand pair; fill it instead.
+    &.quick-filter-btn-active:not(:disabled) {
+      --mdc-outlined-button-label-text-color: var(--white);
+      background-color: var(--maryland-red);
     }
   }
 
   .mat-mdc-unelevated-button.mat-primary, .mat-mdc-outlined-button {
     &:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
   }
+  // NDE's .cdk-keyboard-focused rules ([0,5,0], loaded after us) replace the ring with its own outline/box-shadow.
+  .mdc-button.mat-mdc-unelevated-button.mat-primary.cdk-keyboard-focused:focus-visible,
+  .mdc-button.mat-mdc-outlined-button.cdk-focused.cdk-keyboard-focused:focus-visible {
+    outline: var(--focus-ring); outline-offset: var(--focus-offset);
+  }
 
   // The applied-facet chip is a selected mat-chip-option, so the selected-state tokens are the ones in use.
-  nde-selected-filters .mat-mdc-chip-option.selected-chip {
+  // NDE draws the chip border on the host ([0,4,0]); recolour that one and turn off Material's inner outline.
+  nde-selected-filters .mat-mdc-standard-chip.mat-mdc-chip-option.selected-chip {
+    border-color: var(--medium-gray);
     --mdc-chip-elevated-container-color: var(--white);
     --mdc-chip-elevated-selected-container-color: var(--white);
     --mdc-chip-outline-color: var(--medium-gray);
-    --mdc-chip-outline-width: 1px;
-    --mdc-chip-flat-selected-outline-width: 1px;
+    --mdc-chip-outline-width: 0;
+    --mdc-chip-flat-selected-outline-width: 0;
     --mdc-chip-label-text-color: var(--darker-gray);
     --mdc-chip-selected-label-text-color: var(--darker-gray);
     --mdc-chip-container-shape-radius: var(--radius-pill);
@@ -165,6 +179,10 @@
     min-width: 24px; min-height: 24px;
     &:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
   }
+
+  // Menus (user menu): our global link red on NDE's pink menu surface is 4.09:1.
+  .mat-mdc-menu-panel { --mat-menu-container-color: var(--white); }
+  a.mat-mdc-menu-item { color: var(--darker-gray); }
 
   nde-record-type .record-type, nde-record-indications .record-indication {
     background-color: var(--lighter-gray);
