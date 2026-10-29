@@ -457,3 +457,70 @@ three slow runs of ~6-8 s in the ON arm; the OFF arm had slow runs too) is far l
 Caveats: n=8, live Primo backend latency varies run to run (outliers in both arms); cold cache only, no throttling, so real-network cost of the
 +279 KB package payload is not modelled (fonts/header/footer are not render-blocking for the result list, consistent with the small median delta);
 OFF arm also removes header/footer DOM, which slightly favours OFF; byte counts include package files only.
+
+## Final re-scan after header rewrite (2026-10-29)
+
+Why: the header was rewritten after the T025 scan (two desktop nav rows with native `<details>`/`<summary>` submenus, mobile
+`<details class="umd-mobile-menu">` hamburger below 1240px) and the body font changed to Interstate.
+
+Method: `npm run build` (exit 0, log `.superpowers/sdd/tasks/axe2-build.log`), proxy on :4202 (log `axe2-server.log`). Same T025 method:
+headless Chrome via puppeteer-core, axe-core **4.14.0**, tags wcag2a/wcag2aa/wcag21a/wcag21aa/wcag22aa; A = normal, B = baseline with empty
+200 bodies for our `custom.css`, `header_en.html`, `footer_en.html`; 15 s settle after networkidle2 + selector. Pages at 1440x1600 (home,
+results, full record `alma9963872540808238`, My Library signed out, collections), plus home at 320x1600. OURS = in A not in B, or inside
+`.umd-header`/`.umd-footer`. Opened states (home, A only, scanned with the whole page in view): at 1440 each of the 10 desktop `details.umd-menu`
+opened one at a time (via `details.open = true`), and at 320 the mobile menu opened, then with every `details` inside it opened (the mobile
+menu contains no nested `details`, so the second state equals the first). Scripts/raw: scratchpad `t025/scan3.mjs`, `out3.json`.
+My Library signed-in views: NOT OBSERVED (needs UMD CAS login); its selector wait timed out as in T025 and the 15 s settle was used.
+
+| Page / state | Violations A | Violations B | OURS | Discover-owned |
+|---|---|---|---|---|
+| home 1440 | 0 | 0 | 0 | 0 |
+| results 1440 | 1 rule (1 node) | 1 rule (1 node) | 0 | 1 |
+| full record 1440 | 1 rule (5 nodes) | 1 rule (5 nodes) | 0 | 1 |
+| My Library (signed out) 1440 | 0 | 0 | 0 | 0 |
+| collections 1440 | 0 | 0 | 0 | 0 |
+| home 320 (hamburger visible) | 0 | 0 | 0 | 0 |
+| home 1440, each of 10 desktop dropdowns open | 0 each | n/a | 0 | 0 |
+| home 320, mobile menu open (and all submenus open) | 0 | n/a | 0 | 0 |
+
+**SC-003 MET for the scanned pages and states: 0 violations introduced by our CSS/header/footer.** The T025 home quick-link contrast
+violation is gone (home now 0 in A).
+
+### OUR violations
+
+None.
+
+### Discover-owned (unchanged from T025)
+
+| Page | Rule | Impact | Count | Example target |
+|---|---|---|---|---|
+| results | label-content-name-mismatch | serious | 1 | `.general-search-actions-dropdown-button` |
+| full record | label-content-name-mismatch | serious | 5 | `#card-48` (also `#card-49`, ...) |
+
+### Incomplete (needs manual review)
+
+axe could not decide `color-contrast` for some header elements in the opened desktop dropdown states (1 node for Locations & Hours, System
+Status, Info For, Accounts; 2 for Get Help; 0 for the primary-row menus and mobile states). These are "incomplete", not violations, and were not
+manually checked here, so contrast of those header nodes is NOT VERIFIED by axe; needs a manual check. Other incompletes
+(`aria-prohibited-attr`, other `color-contrast`, `aria-valid-attr-value`) appear in both A and B and are Discover-owned.
+
+### Keyboard (home, Chrome headless, real key presses via puppeteer)
+
+- Page load puts focus in Discover's search `<input>` (autofocus) and `.umd-header` precedes it in DOM, so Tab from load goes through the
+  page and reaches the header only after wrapping around (one Tab stop with `document.body` focused at the wrap, i.e. the browser chrome).
+  Focus is not lost inside the header.
+- 1440: Tab order inside header = 23 stops, all reachable in logical order: global bar link, logo link, then per utility item link + its
+  disclosure `<summary>` (Locations & Hours, System Status, Get Help, Info For, Accounts), the Search link, then per primary item link +
+  summary (Find, Borrow, Request; Visit and Study; Research and Learning; Collections; About). Closed submenu links are correctly skipped.
+  All 23 were visible, not covered (elementFromPoint), not clipped by an overflow ancestor, and had a non-none outline when focused.
+- 320: header stops = global bar link, logo link, one hamburger `<summary>` (3 stops); the two desktop rows are not focusable. All visible
+  with outline.
+- Opening: Enter on a focused `<summary>` opens it (10/10 desktop, 1/1 mobile); the next Tab lands on the first link of the opened panel;
+  every panel link was reachable by Tab and visible/uncovered (3/3, 1/1, 8/8, 5/5, 4/4, 9/9, 4/4, 6/6, 5/5, 13/13 desktop; 69/69 mobile).
+- Closing: Space and Enter on the `<summary>` toggle it closed/open (10/10 desktop, 1/1 mobile). **Escape does NOT close any opened
+  submenu or the mobile menu** (0/11; native `<details>` has no Escape handling and no script is shipped), and focus stays on the link where
+  Escape was pressed. Closing by keyboard therefore means shift-tabbing back to the `<summary>` and pressing Enter/Space. Tabbing past the last
+  panel link leaves the menu open (menus are not auto-closed on blur, so several can stay open at once). This is a gap against the WAI-ARIA
+  disclosure/menu convention of Escape-to-close (not an axe rule, not a WCAG 2.2 A/AA failure by itself: closing is possible by keyboard).
+- Not tested: screen reader announcements, real (headed) browsers other than headless Chrome, Safari/Firefox disclosure behaviour, hover
+  behaviour, widths between 321 and 1439 (e.g. just above/below the 1240px switch).
