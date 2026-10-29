@@ -330,3 +330,46 @@ mat-menus get a white surface, not only the user menu. (c) Primary and secondary
 focus origin) take the hover/active colours, because Material's focus layer shows for keyboard and
 programmatic focus. Not changed: NDE's chip-host 2px focus outline (two rings when the chip is focused);
 the chip label still renders red (not measured); disabled states.
+
+## T025 — axe WCAG 2.2 AA
+
+Method (2026-10-28): `npm run build` (exit 0, log `.superpowers/sdd/tasks/T025-build.log`), proxy on :4202
+(`--public-host http://localhost:4202 --live-reload false`). Headless Chrome via puppeteer-core, axe-core
+**4.14.0** injected, `axe.run(document, {runOnly: wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa})`. Each page
+scanned twice: **A** = normal; **B** = baseline with empty 200 bodies for `/nde/custom/01USMAI_UMCP-NDE/custom.css`,
+`…/assets/header-footer/header_en.html` and `footer_en.html`. Pages: home `/nde/home`; results `/nde/search?query=climate…`
+(waited for `.search-result-item`); full record (first result, `alma9963872540808238`); My Library `/nde/account/favorites`
+(signed out); collections `/nde/collectionDiscovery`. Waits: networkidle2 + selector + 5 s (My Library re-run with 15 s
+because content had not rendered at 5 s; its selector wait timed out, but the 15 s settle was used). Viewport 1280x1600,
+desktop Chrome UA. Scripts/raw results: scratchpad `t025/` (not committed). Violations attributed OURS = in A not in B
+(rule id + target), or inside `.umd-header`/`.umd-footer`/nde-header/nde-footer (none had any). axe covers automatable
+checks only; it does not replace manual keyboard/screen-reader review. My Library signed-in views: NOT OBSERVED, needs UMD CAS login.
+
+| Page | Violations A | Violations B | OURS | Discover-owned |
+|---|---|---|---|---|
+| home | 1 rule (5 nodes) | 0 | **1 rule (5 nodes)** | 0 |
+| results | 1 rule (1 node) | 1 rule (1 node) | 0 | 1 |
+| full record | 1 rule (5 nodes) | 1 rule (5 nodes) | 0 | 1 |
+| My Library (signed out) | 0 | 0 | 0 | 0 |
+| collections | 0 | 0 | 0 | 0 |
+
+**SC-003 NOT MET: 1 violation introduced (home).**
+
+### OUR violations
+
+| Page | Rule | Impact | Target | Summary |
+|---|---|---|---|---|
+| home | color-contrast | serious | `#Opening_hours_link > span`, `#FAQ_link > span`, `#Ask_a_librarian_link > span`, `#Search_tips_link > span`, `#Study_room_link > span` (Discover quick-link tiles) | Text 18px normal weight, foreground #e21833 on background #ffedeb = 4.2:1, needs 4.5:1. Both colours come from our M3 theme (`src/app/styles/m3-theme.scss`: primary #e21833 on primary tone 95 #ffedeb); absent in B where the stock theme colours apply. |
+
+### Discover-owned (for accessibility audit)
+
+| Page | Rule | Impact | Count | Example target |
+|---|---|---|---|---|
+| results | label-content-name-mismatch | serious | 1 | `.general-search-actions-dropdown-button` |
+| full record | label-content-name-mismatch | serious | 5 | `#card-48` (also `#card-49`, `#card-50`, …; virtual browse cards) |
+
+### Incomplete (needs manual review), our elements only
+
+- Header/footer: none on any page.
+- results: `color-contrast` on `.mdc-snackbar__label` (background undetermined, overlaps other elements); present only in A, likely theme-coloured Discover snackbar, needs manual contrast check.
+- All other incompletes (aria-prohibited-attr on quick links, results/record/collections color-contrast with image/gradient backgrounds, aria-valid-attr-value on `#mat-expansion-panel-header-5`) appear in both A and B, so are Discover-owned; the record-page and home incompletes are not listed individually here.
