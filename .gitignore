@@ -40,3 +40,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Licensed Interstate fonts (Adobe Fonts) - never commit; supply at deploy time
+src/assets/fonts/Interstate-*.otf
