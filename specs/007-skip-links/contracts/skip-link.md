@@ -16,7 +16,7 @@
 | Item | Value |
 |---|---|
 | Hook | `nde-header-before` (prior project). Rendered as `nde-header-before-from-remote-0` inside an `ng-component`, a **sibling before** `nde-header` in `nde-app-root > nde-app-layout > section` |
-| Hook element is first focusable, with 001's static header in place | **YES in document order** on all 5 pages (focusable index 0, before `.umd-header` and before all of Discover's skip buttons). **Tab once from load: NO** on 4 of 5 pages, because NDE autofocuses a search input (see Spike notes) |
+| Hook element is first focusable, with 001's static header in place | **YES in document order** on all 5 pages (focusable index 0, before `.umd-header` and before all of Discover's skip buttons). **Tab once from load: NO** on 5 of 5 pages without intervention, because NDE autofocuses a search input or sets a focus starting point (see Spike notes). Overridden by the skip-link component before first user interaction (user decision 2026-10-29) |
 | Main content target selector / id | `main.sub-container`, **no id** (on all 5 pages). Home and My Library also have a second, nested `<main>` inside it (`main.main-landing-page`, `main.sections-content`), also without id. Use `document.querySelector('main')` (first = `main.sub-container`); it contains the search bar, not the header/footer |
 | Main target focusable by default | **NO**: no `tabindex` attribute, `tabIndex` -1, `main.focus()` leaves `document.activeElement` unchanged. Needs `tabindex="-1"` |
 | Header area re-created on navigation | **NO**: home → search (typed in search box) and results → full record (clicked link): same probe element, `data-` attribute kept, same `nde-header-before-…` host and same `.umd-header` element |

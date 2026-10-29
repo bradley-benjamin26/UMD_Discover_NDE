@@ -157,3 +157,67 @@ Evidence (identical on all 5 pages unless stated):
 Same as the T002 spike. The skip link is first in DOM order, but NDE's autofocus or focus start point means a single Tab from load does not reach it on any of the 5 pages. Shift+Tab goes back toward the top.
 
 Screenshots (scratchpad, not committed): `/private/tmp/claude-504/-Users-bbradle1-Documents-projects-UMD-Discover-NDE/24ea0b80-79a8-45ee-9fc9-b7c3efdf1d48/scratchpad/t009-007/shots/{home,search,record,favorites,collections}-{focused,320,640,forced}.png`.
+
+## Final review fix — autofocus override
+
+User decision 2026-10-29: override Discover's load-time autofocus so the first Tab from load reaches
+the skip link (SC-001, SC-002, US1 scenario 1). Design: [research R-autofocus](research.md#r-autofocus-overriding-discovers-load-time-focus-sc-001-sc-002-us1-scenario-1).
+
+**RED** (`.superpowers/sdd/tasks/af-red.log`): 5 new cases, `TOTAL: 2 FAILED, 18 SUCCESS` — "moves focus
+from an autofocused input to the start sentinel" (no `.umd-skip-start`) and "renders a text-less
+tabindex=-1 sentinel" failed; the three "does not move focus" cases (user interacted, after ~3 s,
+after destroy) pass trivially before the feature exists. `spyOnProperty(navigator, 'userActivation')`
+works in ChromeHeadless.
+
+**GREEN 1** (`af-green.log`): 20/20 after two test changes (see Rulings). Mutation: removing
+`cancelAnimationFrame` in `ngOnDestroy` makes "cancels the poll on destroy" fail (`af-mut-destroy.log`).
+
+**Live, first pass**: home/search/favorites/collections passed, record failed 3/3 (Tab → back-to-results).
+Focus trace (`focusin`/`focusout` listeners only): input focused 3247 ms → skip link rendered 3402 →
+our sentinel focused 3411 → sentinel `focusout` with no `focusin` 3495 (Discover blurs the active
+element), leaving `body` focused and the starting point elsewhere.
+
+**RED 2** (`af-red2.log`): "re-parks focus on the sentinel when Discover blurs it within the window"
+`TOTAL: 1 FAILED, 21 SUCCESS`. Fix: after the poll has parked focus once, a fall back to `body` is
+parked again (body is left alone if nothing was ever autofocused — new case). **GREEN 2**
+(`af-green2.log`): `TOTAL: 22 SUCCESS`. `npm run build` OK; `node --test` 61/61.
+
+**Live, final** (proxy :4202, headless Chrome 1440×1000, real `page.keyboard`; all page reads via CDP
+`Runtime.evaluate` with `userGesture:false`, because puppeteer's `page.evaluate` runs with a user gesture
+and sets `hasBeenActive`). Fresh load, networkidle2 + 5 s, then Tab once, then Enter. 3 runs per page:
+
+| Page | Focus at load (`hasBeenActive`) | Tab once from load | Enter → `<main>` focused |
+|---|---|---|---|
+| home | `span.umd-skip-start` (false) | `a.umd-skip-link`, visible (3/3) | 3/3 |
+| search | `span.umd-skip-start` (false) | `a.umd-skip-link`, visible (3/3) | 2/2 (run 1: screenshot timeout after the Tab check) |
+| record | `span.umd-skip-start` (false) | `a.umd-skip-link`, visible (3/3) | 3/3 |
+| favorites | `span.umd-skip-start` (false) | `a.umd-skip-link`, visible (3/3) | 3/3 |
+| collections | `span.umd-skip-start` (false) | `a.umd-skip-link`, visible (3/3) | 3/3 |
+
+`hasBeenActive` is true after the Tab press on every run. At load the sentinel's computed outline is
+`none`; load screenshots show no ring (`scratchpad/t009-007/shots/af-*-load.png`).
+
+Interaction checks (home):
+- (i) Mouse click on the search box inside the window (sentinel was focused, `hasBeenActive` false) →
+  input focused, `hasBeenActive` true; typed "maryland" → value `maryland`, input still focused, and
+  still focused 3.5 s later. No focus change after the click in the focus log.
+- (ii) Enter → in-app navigation to search results: after 8 s focus is on `body`, sentinel not focused
+  (component not re-created; we don't move focus).
+
+Earlier, with the gesture-setting probe, typed text lost its first letters on a click made right
+after DOMContentLoaded; that was Discover still initialising the input (our poll had already stopped
+because `hasBeenActive` was true). With the clean probe and a click once the input is rendered, no
+characters were lost.
+
+VoiceOver/NVDA with focus on the empty sentinel at load: PENDING-HUMAN.
+
+Rulings (test changes):
+1. Existing case "focuses a <main> that appears within the retry window": stubs
+   `navigator.userActivation` as `hasBeenActive: true`. Its synthetic click is not a user activation, so
+   the new poll treated the focused `<main>` as autofocus and parked focus on the sentinel; a real click
+   or Enter is an activation. Assertions unchanged.
+2. New case "cancels the poll on destroy": asserts after `tick(100)` instead of relying on fakeAsync to
+   error on a pending frame — Angular 18 `fakeAsync` flushes pending timers on exit by default, so it
+   would not error.
+3. Design deviation: the poll also re-parks when focus falls back to `body`, but only after it has
+   parked once (record page blur, above).

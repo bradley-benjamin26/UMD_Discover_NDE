@@ -149,6 +149,8 @@ describe('SkipLinkComponent', () => {
   }));
 
   it('focuses a <main> that appears within the retry window', fakeAsync(() => {
+    // A real click is a user interaction; the synthetic one is not, so say so for the autofocus poll.
+    spyOnProperty(navigator, 'userActivation', 'get').and.returnValue({ hasBeenActive: true, isActive: true } as UserActivation);
     const a = create();
     expect(a).withContext('a.umd-skip-link rendered').not.toBeNull();
     if (!a) return;
@@ -173,5 +175,103 @@ describe('SkipLinkComponent', () => {
     fixture = undefined;
     expect(docAdd).not.toHaveBeenCalled();
     expect(winAdd).not.toHaveBeenCalled();
+  });
+
+  describe('autofocus override (before first user interaction)', () => {
+    let input: HTMLInputElement | null;
+    let hasBeenActive: boolean;
+
+    beforeEach(() => {
+      input = null;
+      hasBeenActive = false;
+      spyOnProperty(navigator, 'userActivation', 'get').and.callFake(
+        () => ({ hasBeenActive, isActive: false }) as UserActivation,
+      );
+    });
+
+    afterEach(() => input?.remove());
+
+    // Simulates NDE autofocusing its search box.
+    function autofocusInput(): HTMLInputElement {
+      input = document.createElement('input');
+      document.body.appendChild(input);
+      input.focus();
+      return input;
+    }
+
+    function sentinel(): HTMLElement | null {
+      return fixture!.nativeElement.querySelector('.umd-skip-start');
+    }
+
+    it('moves focus from an autofocused input to the start sentinel, right before the skip link', fakeAsync(() => {
+      const a = create();
+      tick(100);
+      autofocusInput();
+      tick(50);
+      const s = sentinel();
+      expect(s).withContext('.umd-skip-start rendered').not.toBeNull();
+      expect(document.activeElement).toBe(s);
+      // Next focusable element after the sentinel in document order is the skip link.
+      const focusables = Array.from(
+        document.querySelectorAll<HTMLElement>('a[href], input, button, [tabindex]:not([tabindex="-1"])'),
+      );
+      const after = focusables.find((el) => s!.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(after).toBe(a!);
+      tick(3000);
+    }));
+
+    it('re-parks focus on the sentinel when Discover blurs it within the window (record page)', fakeAsync(() => {
+      create();
+      autofocusInput();
+      tick(50);
+      expect(document.activeElement).toBe(sentinel());
+      sentinel()!.blur();
+      tick(50);
+      expect(document.activeElement).toBe(sentinel());
+      tick(3000);
+    }));
+
+    it('leaves focus on body when nothing was ever autofocused', fakeAsync(() => {
+      create();
+      tick(100);
+      expect(document.activeElement).toBe(document.body);
+      tick(3000);
+    }));
+
+    it('does not move focus after the user has interacted', fakeAsync(() => {
+      create();
+      hasBeenActive = true;
+      const i = autofocusInput();
+      tick(100);
+      expect(document.activeElement).toBe(i);
+      tick(3000);
+    }));
+
+    it('does not move focus after the ~3 s window', fakeAsync(() => {
+      create();
+      tick(3100);
+      const i = autofocusInput();
+      tick(100);
+      expect(document.activeElement).toBe(i);
+    }));
+
+    it('cancels the poll on destroy (no pending frame)', fakeAsync(() => {
+      create();
+      tick(100);
+      fixture!.destroy();
+      fixture = undefined;
+      const i = autofocusInput();
+      tick(100);
+      expect(document.activeElement).toBe(i);
+    }));
+
+    it('renders a text-less tabindex="-1" sentinel and still exactly one skip link', () => {
+      create();
+      const s = sentinel();
+      expect(s).withContext('.umd-skip-start rendered').not.toBeNull();
+      expect(s?.getAttribute('tabindex')).toBe('-1');
+      expect(s?.textContent).toBe('');
+      expect(fixture!.nativeElement.querySelectorAll('a.umd-skip-link').length).toBe(1);
+    });
   });
 });
