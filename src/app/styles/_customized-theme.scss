@@ -322,6 +322,11 @@
     * { font-family: inherit; }
     &:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
   }
+
+  // Results availability line (specs/002-results-call-number): size only, colour/content/order stay NDE's.
+  // The extra .mdc-button beats NDE's (0,3,0) component rule without !important.
+  .available-at-button.mdc-button .mdc-button__label { font-size: var(--text-lg); }
+  .quicklink-button { font-size: var(--text-lg); }
 }
 
 @media (forced-colors: active) {
