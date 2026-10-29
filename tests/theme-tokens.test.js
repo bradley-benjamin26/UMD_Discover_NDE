@@ -509,3 +509,38 @@ test('Final I5: the global link rule skips Material anchor controls', () => {
     for (const cls of MATERIAL_ANCHORS) assert.ok(sel.includes(`:not(${cls})`), `${sel} does not exclude ${cls}`);
   }
 });
+
+// ---- 002: availability line size (specs/002-results-call-number, FR-003) ----
+
+// rem is pinned by Discover's html { font-size: 16px }; `medium` follows the browser default, 1.15em keeps 18.4px at 16.
+const SIZE_RULES = [
+  ['availability button', '.custom-nde-theme .available-at-button.mdc-button', 'medium'],
+  ['availability label', '.custom-nde-theme .available-at-button.mdc-button .mdc-button__label', '1.15em'],
+  ['Available now button', '.custom-nde-theme .quicklink-button', 'medium'],
+  ['Available now label', '.custom-nde-theme .quicklink-button .mdc-button__label', '1.15em'],
+];
+for (const [label, sel, want] of SIZE_RULES) {
+  test(`002: ${label} font-size is ${want} (follows browser text size), not px, no !important`, () => {
+    const sizes = styleRules(readCss()).filter((r) => !r.media && r.selectors.includes(sel)).flatMap((r) => r.decls).filter((d) => d.prop === 'font-size');
+    assert.ok(sizes.length, `no font-size rule for ${sel}`);
+    assert.ok(sizes.some((d) => d.value === want), `${sel}: expected font-size: ${want}; found ${JSON.stringify(sizes)}`);
+    assert.deepEqual(sizes.filter((d) => /px|!important/.test(d.value)), [], `${sel}: px or !important font-size`);
+  });
+}
+
+// Final review I1: NDE sets line-height: 24px on the label; scaled text (27.6px at a 24px default) would collide when it wraps.
+for (const sel of ['.custom-nde-theme .available-at-button.mdc-button .mdc-button__label', '.custom-nde-theme .quicklink-button .mdc-button__label']) {
+  test(`002: ${sel} line-height is unitless (scales with the text)`, () => {
+    const lhs = styleRules(readCss()).filter((r) => !r.media && r.selectors.includes(sel)).flatMap((r) => r.decls).filter((d) => d.prop === 'line-height');
+    assert.ok(lhs.length, `no line-height rule for ${sel}`);
+    assert.ok(lhs.every((d) => /^\d+(\.\d+)?$/.test(d.value)), `${sel}: expected unitless line-height; found ${JSON.stringify(lhs)}`);
+  });
+}
+
+// Final review M1: NDE fixes the quicklink button at height: 32px ((0,3,0) rule); the 1.3 label line-height overflows it at larger defaults.
+test('002: quicklink button height grows with its label (height: auto, 32px floor), beating NDE (0,3,0)', () => {
+  const sel = '.custom-nde-theme .quicklink-button.mat-mdc-button.mdc-button';
+  const decls = styleRules(readCss()).filter((r) => !r.media && r.selectors.includes(sel)).flatMap((r) => r.decls);
+  assert.ok(decls.some((d) => d.prop === 'height' && d.value === 'auto'), `${sel}: expected height: auto; found ${JSON.stringify(decls)}`);
+  assert.ok(decls.some((d) => d.prop === 'min-height' && d.value === '32px'), `${sel}: expected min-height: 32px; found ${JSON.stringify(decls)}`);
+});
