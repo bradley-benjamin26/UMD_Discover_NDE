@@ -33,3 +33,38 @@ SkipLinkComponent adds no document- or window-level listeners FAILED
 	a.umd-skip-link rendered: Expected null not to be null.
 TOTAL: 12 FAILED, 3 SUCCESS
 ```
+
+## T006 — behaviour cases fail with template-only component (RED)
+
+Template + styles in place, `skip(e)` a no-op (`.superpowers/sdd/tasks/T006-red.log`): the click is not
+prevented, so the anchor navigates the Karma iframe and the run aborts after the first click case:
+
+```text
+ERROR  Some of your tests did a full page reload!
+SkipLinkComponent with no <main>, click does nothing, throws nothing, and gives up after ~1 s FAILED
+	Expected false to be true.          (ev.defaultPrevented)
+ERROR  Disconnected , because no message in 30000 ms.
+Executed 1 of 15 (1 FAILED) DISCONNECTED
+```
+
+To see every behaviour case fail on its own check, `skip(e)` was then reduced to only
+`e.preventDefault()` (`.superpowers/sdd/tasks/T006-red2.log`). Cases 1–4 (render, href, hidden, visible on
+focus) and case 10 (no `<main>`: nothing happens) pass; every other behaviour case fails on its behaviour check:
+
+```text
+SkipLinkComponent keeps an existing <main> id and still focuses it FAILED
+	Expected <body>...</body> to be <main id="existing">...</main>.
+SkipLinkComponent gives a <main> without id the id "umd-main-content" FAILED
+	Expected '' to be 'umd-main-content'.
+SkipLinkComponent adds no document- or window-level listeners FAILED
+	Expected <body>...</body> to be <main>...</main>.
+SkipLinkComponent focuses a <main> that appears within the retry window FAILED
+	Expected <body>...</body> to be <main>...</main>.
+SkipLinkComponent on click prevents default (URL unchanged) and focuses <main> FAILED
+	Expected <body>...</body> to be <main>...</main>.
+SkipLinkComponent leaves an existing tabindex="0" alone and still focuses <main> FAILED
+	Expected <body>...</body> to be <main tabindex="0">...</main>.
+SkipLinkComponent adds tabindex="-1" to a <main> that is not focusable FAILED
+	Expected null to be '-1'.
+TOTAL: 7 FAILED, 8 SUCCESS
+```
