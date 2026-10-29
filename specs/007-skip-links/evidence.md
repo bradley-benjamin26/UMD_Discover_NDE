@@ -108,3 +108,52 @@ No bypass, color-contrast, or WCAG A/AA violations are ours.
 - collections: `landmark-unique` (`nde-main-menu`), `region` x7.
 - Incomplete (needs review, same with/without feature): `color-contrast` (image backgrounds) on home/results/record/collections; `aria-prohibited-attr` on home/results/record; `aria-valid-attr-value` on record.
 - Caveat: favorites page selector wait timed out in the B run (page still loaded; counts matched A).
+
+## T009 — manual checks
+
+2026-10-29, proxy mode (`npm run start:proxy` on :4202, built from the 007 worktree), headless Chrome,
+puppeteer-core, 1440×1000 unless noted. Pages: home, search `climate`, full record
+`docid=alma9963872540808238`, My Library `/nde/account/favorites` (signed out), collections
+`/nde/collectionDiscovery`. "Reset" = focus a temporary `tabindex=-1` span prepended to `<body>`, press
+Tab, remove the span (per the T002 ruling, FR-001 is checked from page top). Scripts and raw output:
+`/private/tmp/claude-504/-Users-bbradle1-Documents-projects-UMD-Discover-NDE/24ea0b80-79a8-45ee-9fc9-b7c3efdf1d48/scratchpad/t009-007/check.mjs` → `out.json`, `forced.mjs` → `forced.json` (+ `forced-search.json`, search rerun after a screenshot timeout).
+
+| Check | home | search | record | favorites | collections |
+|---|---|---|---|---|---|
+| 1b First Tab from reset → `a.umd-skip-link` "Skip to main content", visible | PASS | PASS | PASS | PASS | PASS |
+| 1c Contrast: text vs bg; ring vs link bg / vs red global bar | PASS | PASS | PASS | PASS | PASS |
+| 2 Enter: URL unchanged, `main` focused, next Tab inside `main` | PASS | PASS | PASS | PASS | PASS |
+| 3 After 5 in-app navigations (one tab) | PASS (see below) | | | | |
+| 4 Discover's `button.skip-h2-button` still work | PASS | PASS | PASS | PASS | PASS |
+| 5 Mouse only: hidden, hover top-left doesn't reveal | PASS | PASS | PASS | PASS | PASS |
+| 6 320 px and 640 px (≈200% of 1280): fully visible, no h-scroll added | PASS | PASS | PASS | PASS | PASS |
+| 7 Forced colours: focused link has outline | PASS | PASS | PASS | PASS | PASS |
+| 8a A11y tree: role/name | PASS | PASS | PASS | PASS | PASS |
+| 8b VoiceOver "Skip to main content, link" | PENDING-HUMAN | PENDING-HUMAN | PENDING-HUMAN | PENDING-HUMAN | PENDING-HUMAN |
+
+Evidence (identical on all 5 pages unless stated):
+
+- **1b**: focused `a.umd-skip-link` href `#umd-main-content`, rect x8 y8 195×36 at 1440, on screen; exactly 1 skip link per page.
+- **1c**: text rgb(36,36,36) on rgb(255,255,255) = **15.52:1** (≥4.5). Ring `solid 3px rgb(36,36,36)`, offset 2px: vs link bg 15.52:1; vs what it sits on (`div.umd-global-bar`, rgb(226,24,51)) **3.26:1** (≥3).
+- **2**: `activeElement` = `main#umd-main-content.sub-container` (id and `tabindex="-1"` added at click), URL unchanged; next Tab = `button#search-dropdown-container-button-` "Libraries Worldwide" in main (collections: the collection search input in main); not in header.
+- **3**: home → (1) search "climate" → (2) next results page (offset=10) → (3) open full record → (4) browser back → (5) new search "maryland". After each: reset+Tab = skip link (count 1), Enter → `main` focused, URL unchanged, next Tab in main. 5/5 PASS.
+- **4**: every `button.skip-h2-button` activated (Enter, then Tab), URL unchanged each time; next Tab lands in or after the named section, e.g. search: Filters → "All Filters", Search results → first result checkbox, Pagination → page "1"; record: Requests/View Online/Details → those panel headers; collections: Collection Discovery Items → first collection. Same behaviour as T002 spike. Sections with no focusable of their own move on to the next control (home "Announcements"/"About the Library" → back-to-top button; signed-out favorites "Saved records" → footer phone link). That is Discover's behaviour, not changed by us.
+- **5**: blurred, mouse at (2,2), (10,10), (30,20), (80,30): link 1×1, `clip-path: inset(50%)`, not `:hover`, not focused.
+- **6**: at 320 and 640 the focused link is 195×36 at (8,8), inside the viewport. `scrollWidth` equals viewport width before and after focus, except search at 320, which is 324 **before and after** (Discover's results page, already there without focus, not caused by the link). Focus leaves the link on Enter, so the fixed link doesn't cover the focused `main`.
+- **7**: CDP `Emulation.setEmulatedMedia` forced-colors active (`matchMedia` true): outline `solid 3px rgba(0,230,255,0.8)`, text rgb(255,255,0) on rgb(0,0,0). (puppeteer's `emulateMediaFeatures` refused `forced-colors` in this version, so raw CDP was used.)
+- **8a**: `page.accessibility.snapshot({root})` → role `link`, name "Skip to main content", focused true.
+- **8b PENDING-HUMAN**: on each page type in Safari + VoiceOver (Cmd+F5), reset focus to the top (click the address bar, then Tab into the page) and Tab once. Expect "Skip to main content, link". Then press Ctrl+Option+Space and check that VoiceOver reads the main region / search area, not the header.
+
+**Discover autofocus (not ours)**: Tab once straight from load, without reset (recorded as-is per the T002 ruling):
+
+| Page | Focused at load | Tab once from load |
+|---|---|---|
+| home | `input#main-search-bar` | `button.voice-search-dialog-button` "Open voice search" |
+| search | `input#main-search-bar` ("climate") | `button.clear-search-btn` "Clear search text" |
+| record | `BODY` | `button.back-to-results-btn` |
+| favorites | `input#main-search-bar` | `button.voice-search-dialog-button` |
+| collections | collection search input | `button.submit-search-btn` "Search" |
+
+Same as the T002 spike. The skip link is first in DOM order, but NDE's autofocus or focus start point means a single Tab from load does not reach it on any of the 5 pages. Shift+Tab goes back toward the top.
+
+Screenshots (scratchpad, not committed): `/private/tmp/claude-504/-Users-bbradle1-Documents-projects-UMD-Discover-NDE/24ea0b80-79a8-45ee-9fc9-b7c3efdf1d48/scratchpad/t009-007/shots/{home,search,record,favorites,collections}-{focused,320,640,forced}.png`.
